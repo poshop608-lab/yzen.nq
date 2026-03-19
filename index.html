@@ -90,7 +90,7 @@ body.auth-open .orb{display:none}
   border:1px solid var(--bdr2);border-radius:var(--r);overflow:hidden;
   box-shadow:0 16px 40px rgba(0,0,0,.7);
 }
-.acct-drop.open{display:block;animation:dropIn .15s ease}
+.acct-drop.open{display:block;animation:dropIn .15s ease;z-index:150}
 @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .a-opt{padding:9px 13px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:space-between;transition:background .1s;color:var(--text2)}
 .a-opt:hover,.a-opt.active{background:var(--g2);color:var(--gold)}
@@ -129,7 +129,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 .u-role{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:.1em}
 
 /* ── MAIN ── */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:contain;scroll-behavior:auto;}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
   background:rgba(6,8,16,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -974,6 +974,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 .step-num{width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--fd)}
 .config-section{margin-bottom:20px}
 .config-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase}
+
+
+/* Image preview modal */
+.img-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.img-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
+.img-modal-overlay img{max-width:92vw;max-height:90vh;border-radius:10px;border:1px solid var(--bdr2);box-shadow:0 0 60px rgba(0,0,0,.8)}
 
 </style>
 </head>
@@ -1865,7 +1871,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 <div class="overlay" id="amodal">
 <div class="modal" style="width:380px">
   <div class="mh"><div class="mt" id="am-t">Add Account</div><div class="mc" onclick="closeM('amodal')">✕</div></div>
-  <div class="mb"><div class="fg"><label>Account Name</label><input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..."></div></div>
+  <div class="mb" style="position:relative;z-index:600"><div class="fg"><label>Account Name</label><input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..." autofocus style="position:relative;z-index:601"></div></div>
   <div class="mf">
     <button class="btn btn-glass btn-sm" onclick="closeM('amodal')">Cancel</button>
     <button class="btn btn-gold" onclick="saveAcct()">Save</button>
@@ -1917,6 +1923,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 @keyframes cloudShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
 @keyframes cloudDot{0%,80%,100%{opacity:.3;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
 @keyframes cloudDoneIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+
+/* Image preview modal */
+.img-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.img-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
+.img-modal-overlay img{max-width:92vw;max-height:90vh;border-radius:10px;border:1px solid var(--bdr2);box-shadow:0 0 60px rgba(0,0,0,.8)}
+
 </style>
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
   <div style="background:rgba(8,10,20,0.98);border:1px solid var(--bdr2);border-radius:20px;padding:28px 32px;width:320px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.8);animation:authIn .2s ease;text-align:center;">
@@ -2245,15 +2257,36 @@ function buildPR(){
 }
 function setPR(n){S.psychRating=n;document.querySelectorAll('.pr-dot').forEach((d,i)=>d.classList.toggle('active',i+1===n));}
 function buildEnvForm(){
-  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>`
-    <div class="yna-wrap">
-      <div class="yna-lbl">${f.name}</div>
-      <div class="yna-row">
-        <div class="yna na" id="yn-${i}-Y" onclick="setYNA(${i},'Yes')">Yes</div>
-        <div class="yna na" id="yn-${i}-N" onclick="setYNA(${i},'No')">No</div>
-        <div class="yna na" id="yn-${i}-X" onclick="setYNA(${i},'N/A')">N/A</div>
-      </div>
-    </div>`).join('');
+  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>{
+    const type=f.type||'yna';
+    if(type==='text'){
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <input type="text" id="yn-${i}-txt" style="margin-top:4px" placeholder="Enter value..." oninput="S.envState[${i}]=this.value">
+      </div>`;
+    } else if(type==='rating'){
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <div class="yna-row" style="margin-top:4px">${[1,2,3,4,5].map(n=>`
+          <div class="yna na" id="yn-${i}-R${n}" onclick="setRating(${i},${n})" style="padding:5px 0">${n}⭐</div>`).join('')}
+        </div>
+      </div>`;
+    } else {
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <div class="yna-row">
+          <div class="yna na" id="yn-${i}-Y" onclick="setYNA(${i},'Yes')">Yes</div>
+          <div class="yna na" id="yn-${i}-N" onclick="setYNA(${i},'No')">No</div>
+          <div class="yna na" id="yn-${i}-X" onclick="setYNA(${i},'N/A')">N/A</div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+function setRating(fi,val){
+  S.envState[fi]=val;
+  [1,2,3,4,5].forEach(n=>{const el=document.getElementById(`yn-${fi}-R${n}`);if(el)el.className='yna na';});
+  const el=document.getElementById(`yn-${fi}-R${val}`);if(el){el.classList.remove('na');el.classList.add('y');}
 }
 function setYNA(fi,val){
   S.envState[fi]=val;
@@ -2311,7 +2344,35 @@ function saveTrade(){
   const sub=`${pnlStr} · ${t.ticker} · ${t.session}`;
   showSuccessBurst(icon,title,sub,isWin);
 }
-function copyLast(){const l=S.trades[S.trades.length-1];if(!l){toast('No trades');return;}document.getElementById('t-tk').value=l.ticker;document.getElementById('t-sess').value=l.session;document.getElementById('t-bias').value=l.htfBias||'';toast('Copied ✓');}
+function copyLast(){
+  const l=S.trades[S.trades.length-1];if(!l){toast('No trades yet');return;}
+  // Copy all fields
+  document.getElementById('t-tk').value=l.ticker||'MNQ';
+  try{document.getElementById('t-sess').value=l.session||'NY-AM';}catch(e){}
+  try{document.getElementById('t-bias').value=l.htfBias||'';}catch(e){}
+  try{document.getElementById('t-style').value=l.style||'';}catch(e){}
+  try{document.getElementById('t-out').value=l.outcome||'win';}catch(e){}
+  try{document.getElementById('t-grade').value=l.grade||'A';}catch(e){}
+  try{document.getElementById('t-pd').value=l.pdArray||'';}catch(e){}
+  try{document.getElementById('t-tgt').value=l.target||'';}catch(e){}
+  try{document.getElementById('t-emotion').value=l.emotion||'';}catch(e){}
+  try{document.getElementById('t-mistake').value=l.mistake||'';}catch(e){}
+  try{document.getElementById('t-rr').value=l.rr||'';}catch(e){}
+  // Copy env state
+  if(l.env){
+    S.envState={...l.env};
+    // Re-render env with copied values
+    buildEnvForm();
+    // Re-apply YNA selections
+    Object.entries(l.env).forEach(([fi,val])=>{
+      setTimeout(()=>{
+        if(typeof val==='number'){setRating(parseInt(fi),val);}
+        else{setYNA(parseInt(fi),val);}
+      },50);
+    });
+  }
+  showSuccessBurst('📋','COPIED','Last trade fields loaded',false);
+}
 
 // ══════ TRADES PAGE ══════
 function renderTrades(){
@@ -2347,7 +2408,10 @@ function renderTrades(){
       <td style="font-family:var(--fm);font-size:10px">${getEnv(t,'Macro')}</td>
       <td style="font-family:var(--fm);font-size:10px;color:${t.psychRating>=7?'var(--green)':t.psychRating<=4?'var(--red)':'var(--text2)'}">${t.psychRating||'—'}/10</td>
       <td style="font-size:10px;color:var(--red)">${t.mistake||'—'}</td>
-      <td><button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button></td>
+      <td style="text-align:right">
+        ${t.images&&t.images.length?`<div style="display:flex;gap:3px;justify-content:flex-end">${t.images.slice(0,2).map(img=>`<img src="${img}" onclick="openImgModal('${img}')" style="width:36px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr);cursor:pointer;transition:transform .2s" onmouseover="this.style.transform='scale(1.8)'" onmouseout="this.style.transform='scale(1)'">`).join('')}</div>`:''}
+        <button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px;margin-top:2px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button>
+      </td>
     </tr>`).join('');
 }
 async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
@@ -3734,6 +3798,29 @@ initAuth();
 document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
 if(!S.feedback)S.feedback=[];
 setInterval(()=>{if(S.checklist.autoClear&&S.checklist.lastClear&&(Date.now()-S.checklist.lastClear)/3600000>=4){S.checklist.items.forEach(i=>i.on=false);S.checklist.lastClear=Date.now();save();}},60000);
+// ── Real-time sync when user returns to tab/app ──
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&SB&&currentUser&&currentUser.id!=='demo'){
+    console.log('[SYNC] Tab focused — refreshing data from cloud');
+    loadUserData().then(()=>{
+      // Re-render current page with fresh data
+      const activePage=document.querySelector('.page.active');
+      if(activePage){
+        const pg=activePage.id.replace('page-','');
+        rp(pg);
+      }
+    });
+  }
+});
+
+// ── Sync before page unload ──
+window.addEventListener('beforeunload',()=>{
+  if(SB&&currentUser&&currentUser.id!=='demo'){
+    // Synchronous save attempt
+    saveToSupabase();
+  }
+});
+
 window.addEventListener('resize',()=>{if(document.getElementById('page-equity').classList.contains('active'))renderEquity();});
 setTimeout(showDailyQuote,1800);
 
@@ -3763,22 +3850,41 @@ setTimeout(showDailyQuote,1800);
 
 const SQL_SCHEMA = `
 -- Run this in your Supabase SQL Editor
+-- Step 1: Create table
 CREATE TABLE IF NOT EXISTS yz_journal (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   user_email text,
   user_name text,
   data jsonb DEFAULT '{}'::jsonb,
   updated_at timestamptz DEFAULT now()
 );
+
+-- Step 2: Enable Row Level Security
 ALTER TABLE yz_journal ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users own data" ON yz_journal
-  FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admin read all" ON yz_journal
-  FOR SELECT USING (
-    (SELECT email FROM auth.users WHERE id = auth.uid()) = current_setting('app.admin_email', true)
-  );
+
+-- Step 3: Drop old policies if they exist
+DROP POLICY IF EXISTS "Users own data" ON yz_journal;
+DROP POLICY IF EXISTS "Admin read all" ON yz_journal;
+
+-- Step 4: Create clean policies
+CREATE POLICY "Users can do everything with own data"
+  ON yz_journal FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Step 5: Create index
 CREATE INDEX IF NOT EXISTS idx_yz_journal_user ON yz_journal(user_id);
+
+-- Step 6: Auto-update timestamp
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS yz_journal_updated_at ON yz_journal;
+CREATE TRIGGER yz_journal_updated_at
+  BEFORE UPDATE ON yz_journal
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 `.trim();
 
 function copySQL(){
@@ -3911,27 +4017,108 @@ async function authDemo(){
 
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
+  console.log('[SYNC] Loading data for user:', currentUser.email);
+  showSyncStatus('loading');
   try{
-    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
-    if(data&&data.data&&Object.keys(data.data).length>0){
-      const remote=data.data;
-      // Merge remote data into S
-      if(remote.trades)S.trades=remote.trades;
-      if(remote.notes)S.notes=remote.notes;
-      if(remote.deposits)S.deposits=remote.deposits;
-      if(remote.accounts)S.accounts=remote.accounts;
-      if(remote.settings)S.settings={...S.settings,...remote.settings};
-      if(remote.envFields)S.envFields=remote.envFields;
-      if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
-      if(remote.filterPresets)S.filterPresets=remote.filterPresets;
-      if(remote.newsEvents)S.newsEvents=remote.newsEvents;
-      if(remote.replayNotes)S.replayNotes=remote.replayNotes;
+    const{data,error}=await SB
+      .from('yz_journal')
+      .select('data,updated_at')
+      .eq('user_id',currentUser.id)
+      .maybeSingle(); // maybeSingle() doesn't throw on no rows
+    
+    if(error){
+      console.error('[SYNC] Load error:', error.message);
+      // If table doesn't exist, create it
+      if(error.message.includes('does not exist')||error.code==='42P01'){
+        await createTableIfNeeded();
+        showSyncStatus('ready');
+        return;
+      }
+      showSyncStatus('error', error.message);
+      return;
     }
-  }catch(e){console.log('No existing data, starting fresh');}
+    
+    if(data&&data.data){
+      const remote=data.data;
+      const remoteTime=data.updated_at?new Date(data.updated_at).getTime():0;
+      const localTime=parseInt(localStorage.getItem('yz4_ts')||'0');
+      
+      console.log('[SYNC] Remote updated:', data.updated_at, '| Local ts:', localTime);
+      
+      // Always use remote data when logging in from a new device
+      // Only skip if local is explicitly newer AND has more trades
+      const localTrades=(S.trades||[]).length;
+      const remoteTrades=(remote.trades||[]).length;
+      const useRemote=remoteTrades>0||(remoteTime>localTime);
+      
+      if(useRemote){
+        console.log('[SYNC] Loading remote data — trades:', remoteTrades);
+        if(remote.trades!=null)S.trades=remote.trades;
+        if(remote.notes!=null)S.notes=remote.notes;
+        if(remote.deposits!=null)S.deposits=remote.deposits;
+        if(remote.accounts!=null)S.accounts=remote.accounts;
+        if(remote.settings!=null)S.settings={...S.settings,...remote.settings};
+        if(remote.envFields!=null)S.envFields=remote.envFields;
+        if(remote.checklist!=null)S.checklist={...S.checklist,...remote.checklist};
+        if(remote.filterPresets!=null)S.filterPresets=remote.filterPresets;
+        if(remote.newsEvents!=null)S.newsEvents=remote.newsEvents;
+        if(remote.replayNotes!=null)S.replayNotes=remote.replayNotes;
+        // Also update localStorage with remote data
+        localStorage.setItem('yz4',JSON.stringify(S));
+        showSyncStatus('loaded', remoteTrades+' trades loaded');
+      } else {
+        console.log('[SYNC] Local data is newer, keeping local');
+        showSyncStatus('ready');
+      }
+    } else {
+      // No remote data — first login on this account, upload local data
+      console.log('[SYNC] No remote data found — uploading local data');
+      await saveToSupabase();
+    }
+  }catch(e){
+    console.error('[SYNC] Exception:', e);
+    showSyncStatus('error', e.message);
+  }
+}
+
+async function createTableIfNeeded(){
+  // Guide user to run SQL
+  console.log('[SYNC] Table missing — showing SQL guide');
+  toast('⚠️ Run the SQL in Supabase first — tap Settings → Copy SQL');
+}
+
+function showSyncStatus(status, msg=''){
+  const ind=document.getElementById('save-indicator');
+  const icon=document.getElementById('save-ind-icon');
+  const txt=document.getElementById('save-ind-text');
+  if(!ind)return;
+  ind.style.opacity='1';
+  if(status==='loading'){
+    if(icon)icon.textContent='☁️';
+    if(txt){txt.textContent='LOADING...';txt.style.color='var(--text3)';}
+  } else if(status==='loaded'){
+    if(icon)icon.textContent='✓';
+    if(txt){txt.textContent=msg||'SYNCED';txt.style.color='var(--green)';}
+    setTimeout(()=>ind.style.opacity='0',3000);
+  } else if(status==='error'){
+    if(icon)icon.textContent='⚠';
+    if(txt){txt.textContent='SYNC ERROR';txt.style.color='var(--red)';}
+    console.error('[SYNC] Error:', msg);
+    toast('⚠️ Sync error — check Supabase SQL setup');
+  } else if(status==='ready'){
+    if(icon)icon.textContent='✓';
+    if(txt){txt.textContent='READY';txt.style.color='var(--green)';}
+    setTimeout(()=>ind.style.opacity='0',2000);
+  }
 }
 
 async function saveToSupabase(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
+  // Show sync indicator in topbar
+  const ind=document.getElementById('save-indicator');
+  const icon=document.getElementById('save-ind-icon');
+  const txt=document.getElementById('save-ind-text');
+  if(ind){ind.style.opacity='1';if(icon)icon.textContent='☁️';if(txt){txt.textContent='SYNCING...';txt.style.color='var(--text3)';}}
   // Show glowing sync overlay
   const overlay=document.getElementById('cloud-sync-overlay');
   const card=document.getElementById('cloud-sync-card');
@@ -3956,7 +4143,16 @@ async function saveToSupabase(){
       },
       updated_at:new Date().toISOString()
     };
-    await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
+    const{error:saveErr}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
+    if(saveErr){
+      console.error('[SYNC] Save error:',saveErr.message,saveErr.code);
+      showSyncStatus('error', saveErr.message);
+      if(saveErr.code==='42P01'){toast('⚠️ Table not found — run SQL in Supabase');}
+      else if(saveErr.code==='42501'){toast('⚠️ Permission denied — check RLS policies');}
+      return;
+    }
+    console.log('[SYNC] Saved successfully');
+    showSyncStatus('loaded','SYNCED ✓');
     // Show success state
     if(overlay){
       if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
@@ -4019,8 +4215,42 @@ function enterApp(){
     // Make sure sidebar shows the right account name
     document.getElementById('ac-name').textContent=S.cur;
     rCalendar();
-    toast('Welcome back, '+name+' ✓');
+    setTimeout(()=>showWelcomeQuote(name),800);
   }
+}
+function showWelcomeQuote(name){
+  const welcomeQuotes=[
+    {text:'The market is a device for transferring money from the impatient to the patient.',author:'Warren Buffett'},
+    {text:'Do not focus on making money. Focus on protecting what you have.',author:'Paul Tudor Jones'},
+    {text:'The goal of a successful trader is to make the best trades. Money is secondary.',author:'Alexander Elder'},
+    {text:'In this game, the market has to keep pitching, but you don\'t have to swing.',author:'Warren Buffett'},
+    {text:'Every trade teaches you something. The ones that hurt teach you the most.',author:'GWP Mentorship'},
+    {text:'Discipline is doing what you know you need to do even when you don\'t feel like doing it.',author:'YzenNq'},
+    {text:'Your edge is not just the setup. Your edge is your ability to execute it consistently.',author:'GWP Mentorship'},
+    {text:'The best trade you ever make is the one you didn\'t take when the setup wasn\'t there.',author:'ICT'},
+    {text:'Clean the slate. Yesterday\'s loss is not today\'s debt.',author:'YzenNq · GWP'},
+    {text:'You don\'t rise to the level of your goals. You fall to the level of your systems.',author:'James Clear'},
+  ];
+  const q=welcomeQuotes[Math.floor(Math.random()*welcomeQuotes.length)];
+  const popup=document.getElementById('quote-popup');
+  const qt=document.getElementById('quote-text');
+  const qa=document.getElementById('quote-author');
+  if(!popup||!qt||!qa)return;
+  qt.textContent='"'+q.text+'"';
+  qa.textContent='— '+q.author;
+  // Add welcome header
+  const existing=popup.querySelector('.welcome-header');
+  if(!existing){
+    const hdr=document.createElement('div');
+    hdr.className='welcome-header';
+    hdr.style.cssText='font-family:var(--fd);font-size:18px;color:var(--gold);letter-spacing:.06em;margin-bottom:8px';
+    hdr.textContent='Welcome back, '+name+' ✨';
+    popup.insertBefore(hdr,qt);
+  } else {
+    existing.textContent='Welcome back, '+name+' ✨';
+  }
+  popup.classList.add('show');
+  setTimeout(()=>popup.classList.remove('show'),6000);
 }
 
 async function signOut(){
@@ -4060,5 +4290,11 @@ function initAuth(){
 }
 
 </script>
+
+<!-- Image preview modal -->
+<div class="img-modal-overlay" id="img-modal-overlay" onclick="closeImgModal()">
+  <img id="img-modal-img" src="">
+</div>
+
 </body>
 </html>
