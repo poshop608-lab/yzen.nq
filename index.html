@@ -6,10 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>YzenNq Journal</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('wOpMg_d3aDy9MmgSM');</script>
 <style>
 :root{
   --bg:#060810;--g1:rgba(255,255,255,0.04);--g2:rgba(255,255,255,0.07);--g3:rgba(255,255,255,0.10);
@@ -26,27 +24,27 @@
   --ff:'DM Sans',sans-serif;--fm:'DM Mono',monospace;--fd:'Bebas Neue',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:14px;scroll-behavior:smooth}
+html{font-size:14px;scroll-behavior:smooth;overscroll-behavior:none;overflow:hidden;height:100%;}
 
 body{
   background:var(--bg);color:var(--text);font-family:var(--ff);
-  display:flex;overflow:hidden;height:100vh;width:100vw;
-  overscroll-behavior:none;
+  display:flex;overflow:hidden;height:100%;width:100vw;
+  overscroll-behavior:none;position:fixed;width:100%;
   background-image:
     radial-gradient(ellipse 70% 50% at 15% 0%,rgba(201,168,76,0.07) 0%,transparent 55%),
     radial-gradient(ellipse 50% 40% at 85% 100%,rgba(96,165,250,0.05) 0%,transparent 55%);
   background-attachment:fixed;
 }
-body.auth-open{overflow:auto;height:auto;min-height:100vh;display:block;}
+body.auth-open{overflow:auto;height:auto;min-height:100%;display:block;position:relative;}
 
 /* ── ANIMATED ORBS — GPU composited only, no repaints ── */
 .orb{
   position:fixed;border-radius:50%;pointer-events:none;z-index:0;
   will-change:transform;transform:translateZ(0);
-  filter:blur(70px);
   animation:orbFloat 14s ease-in-out infinite;
-  backface-visibility:hidden;
 }
+/* Use pseudo-element for blur so parent stays on compositor */
+.orb::after{content:'';position:absolute;inset:0;border-radius:50%;filter:blur(70px);background:inherit;}
 .orb1{width:420px;height:420px;background:rgba(201,168,76,0.08);top:-140px;left:-140px;animation-delay:0s}
 .orb2{width:340px;height:340px;background:rgba(96,165,250,0.07);bottom:-90px;right:-90px;animation-delay:-5s}
 .orb3{width:300px;height:300px;background:rgba(34,211,160,0.05);top:35%;right:18%;animation-delay:-9s;animation-duration:18s}
@@ -56,15 +54,12 @@ body.auth-open .orb{display:none}
 /* ── SIDEBAR ── */
 .sidebar{
   width:230px;min-width:230px;
-  background:rgba(6,8,16,0.97);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border-right:1px solid rgba(255,255,255,0.06);
+  background:rgba(8,10,18,0.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-right:1px solid var(--bdr);
   display:flex;flex-direction:column;height:100vh;
   position:sticky;top:0;overflow-y:auto;z-index:100;
   contain:layout style;
-  box-shadow:4px 0 32px rgba(0,0,0,0.4),inset -1px 0 0 rgba(201,168,76,0.06);
-  will-change:transform;
-  transform:translateZ(0);
 }
 
 .logo-wrap{padding:22px 18px 18px;border-bottom:1px solid var(--bdr)}
@@ -72,29 +67,13 @@ body.auth-open .orb{display:none}
   font-family:var(--fd);font-size:28px;letter-spacing:.08em;
   background:linear-gradient(135deg,var(--gold),#E8C870,var(--gold2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  line-height:1;
-  filter:drop-shadow(0 0 12px rgba(201,168,76,0.6)) drop-shadow(0 0 28px rgba(201,168,76,0.28));
-  will-change:transform;
-}
-/* Subtle scale pulse instead of filter pulse — GPU composited */
-@keyframes logoGlowPulse{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.012)}
+  line-height:1;filter:drop-shadow(0 0 8px rgba(201,168,76,0.5));
 }
 .logo-sub{font-family:var(--fm);font-size:8px;letter-spacing:.25em;color:var(--text3);margin-top:3px;text-transform:uppercase}
 
 /* glow dot */
-.status-dot{
-  width:6px;height:6px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 10px var(--green),0 0 20px rgba(34,211,160,0.35);
-  display:inline-block;margin-right:6px;
-  animation:dotPulse 2s ease infinite;
-  will-change:opacity,transform;
-}
-@keyframes dotPulse{
-  0%,100%{opacity:1;transform:scale(1)}
-  50%{opacity:0.55;transform:scale(0.85)}
-}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green),0 0 24px rgba(34,211,160,0.4);display:inline-block;margin-right:6px;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 12px var(--green),0 0 24px rgba(34,211,160,0.4)}50%{opacity:.6;box-shadow:0 0 5px var(--green),0 0 10px rgba(34,211,160,0.2)}}
 
 .acct-wrap{padding:10px 14px 12px;border-bottom:1px solid var(--bdr);position:relative}
 .acct-lbl{font-family:var(--fm);font-size:8px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
@@ -111,7 +90,7 @@ body.auth-open .orb{display:none}
   border:1px solid var(--bdr2);border-radius:var(--r);overflow:hidden;
   box-shadow:0 16px 40px rgba(0,0,0,.7);
 }
-.acct-drop.open{display:block;animation:dropIn .15s ease;z-index:150}
+.acct-drop.open{display:block;animation:dropIn .15s ease}
 @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .a-opt{padding:9px 13px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:space-between;transition:background .1s;color:var(--text2)}
 .a-opt:hover,.a-opt.active{background:var(--g2);color:var(--gold)}
@@ -121,48 +100,21 @@ body.auth-open .orb{display:none}
 .a-action.danger:hover{color:var(--red)}
 .a-action.primary:hover{color:var(--gold)}
 
-nav{flex:1;padding:10px 0;overflow-y:auto}
-.ns{
-  padding:14px 20px 5px;
-  font-family:'DM Mono',monospace;
-  font-size:7px;letter-spacing:.32em;
-  color:rgba(201,168,76,0.5);
-  text-transform:uppercase;
-  font-weight:500;
-  text-shadow:0 0 12px rgba(201,168,76,0.2);
-}
+nav{flex:1;padding:8px 0;overflow-y:auto}
+.ns{padding:9px 16px 3px;font-family:var(--fm);font-size:8px;letter-spacing:.22em;color:var(--text3);text-transform:uppercase}
 .ni{
-  display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;
-  color:rgba(255,255,255,0.38);
-  font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:400;letter-spacing:.015em;
-  transition:color .18s,background .18s,text-shadow .18s,box-shadow .18s;
-  border-left:2px solid transparent;
-  margin:1px 8px 1px 0;
-  border-radius:0 10px 10px 0;
-  position:relative;
+  display:flex;align-items:center;gap:9px;padding:8px 18px;cursor:pointer;
+  color:var(--text3);font-size:12px;font-weight:400;
+  transition:color .15s,background .15s;
+  border-left:2px solid transparent;margin:1px 0;border-radius:0 var(--r) var(--r) 0;margin-right:8px;
 }
-.ni:hover{
-  color:rgba(255,255,255,0.82);
-  background:linear-gradient(90deg,rgba(255,255,255,0.05),transparent);
-  text-shadow:0 0 20px rgba(255,255,255,0.18);
-}
+.ni:hover{color:var(--text);background:var(--g1)}
 .ni.active{
-  color:var(--gold);
-  font-weight:600;
-  background:linear-gradient(90deg,rgba(201,168,76,0.13),rgba(201,168,76,0.05),transparent);
-  border-left-color:var(--gold);
-  text-shadow:0 0 12px rgba(201,168,76,0.75),0 0 28px rgba(201,168,76,0.35),0 0 48px rgba(201,168,76,0.12);
-  box-shadow:inset 3px 0 18px rgba(201,168,76,0.1),inset 0 0 28px rgba(201,168,76,0.04);
-  letter-spacing:.02em;
+  color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold);
+  font-weight:500;box-shadow:inset 0 0 20px var(--gold-dim),0 0 12px rgba(201,168,76,0.1);
+  text-shadow:0 0 12px rgba(201,168,76,0.6);
 }
-.ni-ic{
-  font-size:15px;width:20px;text-align:center;
-  flex-shrink:0;
-  transition:filter .18s,transform .18s;
-}
-.ni:hover .ni-ic{filter:drop-shadow(0 0 6px rgba(255,255,255,0.3));transform:scale(1.08);}
-.ni.active .ni-ic{filter:drop-shadow(0 0 8px rgba(201,168,76,0.7));}
+.ni-ic{font-size:14px;width:16px;text-align:center}
 
 .sb-foot{padding:14px 16px;border-top:1px solid var(--bdr);margin-top:auto}
 .u-row{display:flex;align-items:center;gap:9px}
@@ -177,19 +129,17 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
 .u-role{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:.1em}
 
 /* ── MAIN ── */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;transform:translateZ(0);overscroll-behavior-y:none;}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100%;position:relative;z-index:1;overscroll-behavior:none;scroll-behavior:auto;-webkit-overflow-scrolling:touch;}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
-  background:rgba(6,8,16,0.96);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  background:rgba(6,8,16,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:50;
   contain:layout style;
-  will-change:transform;
-  transform:translateZ(0);
 }
 .tb-title{font-family:var(--fd);font-size:22px;letter-spacing:.06em;color:var(--text)}
 .tb-right{display:flex;align-items:center;gap:8px}
 
-.page{display:none;padding:22px 24px;min-height:calc(100vh - 49px);animation:pageIn .2s ease;box-sizing:border-box;contain:layout style;}
+.page{display:none;padding:22px 24px;min-height:calc(100vh - 49px);animation:pageIn .3s ease;box-sizing:border-box}
 .page.active{display:block}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
@@ -200,57 +150,9 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   transition:box-shadow .15s,transform .15s,background .15s;
   display:inline-flex;align-items:center;gap:5px;
 }
-/* ── LOG TRADE BUTTON — glowy pulse (GPU only: opacity+transform) ── */
 .btn-gold{
   background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg);
-  box-shadow:0 0 20px var(--gold-glow),0 0 36px rgba(201,168,76,0.18);
-  position:relative;overflow:hidden;
-  will-change:transform;
-}
-.btn-gold::after{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at center,rgba(255,255,255,0.22),transparent 70%);
-  border-radius:inherit;pointer-events:none;
-  animation:goldPulse 3s ease-in-out infinite;
-  will-change:opacity;
-}
-@keyframes goldPulse{
-  0%,100%{opacity:0.4}
-  50%{opacity:1}
-}
-.btn-gold:hover{
-  box-shadow:0 0 32px rgba(201,168,76,0.85),0 0 56px rgba(201,168,76,0.3)!important;
-  transform:translateY(-1px);
-}
-
-/* Trade modal overlay — enhanced entrance */
-#tmodal{background:rgba(0,0,0,.80);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
-#tmodal .modal{
-  box-shadow:
-    0 0 0 1px rgba(201,168,76,0.15),
-    0 24px 80px rgba(0,0,0,.85),
-    0 0 60px rgba(201,168,76,0.07),
-    0 0 120px rgba(96,165,250,0.04);
-  border:1px solid rgba(201,168,76,0.12);
-  animation:tradeModalIn .35s cubic-bezier(.34,1.28,.64,1) forwards;
-}
-@keyframes tradeModalIn{
-  from{opacity:0;transform:translateY(24px) scale(.96)}
-  to{opacity:1;transform:translateY(0) scale(1)}
-}
-/* Modal header gold line */
-#tmodal .mh{
-  border-bottom:1px solid rgba(201,168,76,0.15);
-  position:relative;
-}
-#tmodal .mh::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,var(--gold),rgba(96,165,250,0.5),transparent);
-  opacity:.5;pointer-events:none;
-}
-#tmodal .mt{
-  font-family:var(--fd);font-size:24px;letter-spacing:.06em;
-  color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.5);
+  box-shadow:0 0 16px var(--gold-glow);
 }
 .btn-gold:hover{box-shadow:0 0 28px var(--gold-glow);transform:translateY(-1px)}
 .btn-glass{
@@ -268,7 +170,6 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   border:1px solid var(--bdr);border-radius:var(--r2);padding:18px;
   transition:border-color .2s,box-shadow .2s;position:relative;
   contain:layout style;
-  transform:translateZ(0);
 }
 .card::before{
   content:'';position:absolute;inset:0;
@@ -283,7 +184,6 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   background:rgba(255,255,255,0.05);border:1px solid var(--bdr);
   border-radius:var(--r2);padding:18px 20px;position:relative;overflow:hidden;
   transition:transform .18s,box-shadow .18s;will-change:transform;
-  transform:translateZ(0);
 }
 .sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0}
 .sc:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.4)}
@@ -338,7 +238,6 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   min-height:82px;background:var(--g1);border:1px solid var(--bdr);
   border-radius:var(--r);padding:8px;cursor:pointer;
   transition:background .15s,border-color .15s,box-shadow .15s;
-  position:relative;overflow:hidden;
 }
 .cc:hover{background:var(--g2);border-color:var(--bdr2)}
 .cc.today{border-color:var(--gold);box-shadow:0 0 14px var(--gold-dim),inset 0 0 10px var(--gold-dim)}
@@ -383,12 +282,12 @@ tbody td{padding:9px 10px;white-space:nowrap}
 .pz{color:var(--text3);font-family:var(--fm)}
 
 /* ── GRADE BADGE ── */
-.grade{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:5px;font-family:var(--fd);font-size:13px;font-weight:700;padding:0 3px;letter-spacing:-.01em}
-.g-a{background:rgba(34,211,160,.18);color:var(--green);box-shadow:0 0 10px rgba(34,211,160,.3),inset 0 0 8px rgba(34,211,160,.06)}
-.g-b{background:rgba(96,165,250,.15);color:var(--blue);box-shadow:0 0 8px rgba(96,165,250,.25)}
-.g-c{background:rgba(234,179,8,.15);color:#eab308;box-shadow:0 0 8px rgba(234,179,8,.2)}
-.g-d{background:rgba(251,146,60,.15);color:var(--orange);box-shadow:0 0 6px rgba(251,146,60,.2)}
-.g-f{background:rgba(248,113,113,.15);color:var(--red);box-shadow:0 0 10px rgba(248,113,113,.3)}
+.grade{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;font-family:var(--fd);font-size:13px;font-weight:700}
+.g-a{background:rgba(34,211,160,.15);color:var(--green)}
+.g-b{background:rgba(96,165,250,.15);color:var(--blue)}
+.g-c{background:rgba(234,179,8,.15);color:#eab308}
+.g-d{background:rgba(251,146,60,.15);color:var(--orange)}
+.g-f{background:var(--red-dim);color:var(--red)}
 
 /* ── FORMS ── */
 .fg{display:flex;flex-direction:column;gap:5px}
@@ -772,6 +671,10 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
    UPGRADED GLOW UI — ALL INTERACTIVE ELEMENTS
    ════════════════════════════════════════ */
 
+/* Sidebar nav items */
+.ni{transition:color .15s,background .15s,box-shadow .15s,text-shadow .15s}
+.ni:hover{color:var(--text);background:linear-gradient(90deg,rgba(201,168,76,0.06),transparent);box-shadow:inset 3px 0 12px rgba(201,168,76,0.1)}
+.ni.active{color:var(--gold);background:linear-gradient(90deg,rgba(201,168,76,0.12),transparent);border-left-color:var(--gold);text-shadow:0 0 14px rgba(201,168,76,0.6);box-shadow:inset 3px 0 20px rgba(201,168,76,0.1),inset 0 0 30px rgba(201,168,76,0.04)}
 
 /* Topbar gold underline */
 .topbar{border-bottom:1px solid var(--bdr);position:relative}
@@ -783,10 +686,12 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .btn-glass:hover{box-shadow:0 0 16px rgba(255,255,255,0.07),0 0 0 1px rgba(255,255,255,0.12)!important;background:var(--g3)!important}
 .btn-red:hover{box-shadow:0 0 18px var(--red-glow)!important;filter:brightness(1.1)}
 
-/* Cards — original hover restored */
+/* Cards */
+.card{transition:border-color .2s,box-shadow .2s}
 .card:hover{border-color:rgba(201,168,76,0.2)!important;box-shadow:0 6px 30px rgba(0,0,0,.35),0 0 0 1px rgba(201,168,76,0.08),inset 0 1px 0 rgba(255,255,255,0.04)!important}
 
-/* Stat cards — original color glows restored */
+/* Stat cards with color-matched glow */
+.sc{transition:transform .18s,box-shadow .18s,border-color .18s}
 .sc:hover{transform:translateY(-3px)!important}
 .sc.gold:hover{box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 28px var(--gold-glow)!important;border-color:rgba(201,168,76,0.3)!important}
 .sc.green:hover{box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 28px var(--green-glow)!important;border-color:rgba(34,211,160,0.3)!important}
@@ -802,12 +707,11 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .sv.neg{color:var(--red);text-shadow:0 0 20px var(--red-glow),0 0 40px rgba(248,113,113,0.2)}
 .sv.gold{color:var(--gold);text-shadow:0 0 20px var(--gold-glow),0 0 40px rgba(201,168,76,0.2)}
 
-/* Calendar cells — GPU layer via translateZ */
+/* Calendar cells */
 .cc{transition:background .15s,border-color .15s,box-shadow .15s}
 .cc:hover{background:var(--g2)!important;border-color:rgba(201,168,76,0.25)!important;box-shadow:0 0 14px rgba(201,168,76,0.08),inset 0 0 8px rgba(201,168,76,0.04)!important}
-.cc.today{border-color:var(--gold)!important;box-shadow:0 0 20px var(--gold-dim),0 0 40px rgba(201,168,76,0.08),inset 0 0 16px rgba(201,168,76,0.06)!important;}
-.cc.today::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(201,168,76,0.1),transparent 70%);animation:todayPulse 3s ease-in-out infinite;pointer-events:none;will-change:opacity;}
-@keyframes todayPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+.cc.today{border-color:var(--gold)!important;box-shadow:0 0 20px var(--gold-dim),0 0 40px rgba(201,168,76,0.08),inset 0 0 16px rgba(201,168,76,0.06)!important;animation:todayPulse 3s ease-in-out infinite}
+@keyframes todayPulse{0%,100%{box-shadow:0 0 20px var(--gold-dim),inset 0 0 16px rgba(201,168,76,0.06)}50%{box-shadow:0 0 32px rgba(201,168,76,0.3),inset 0 0 20px rgba(201,168,76,0.1)}}
 
 /* Checklist items */
 .cl-item{transition:background .15s,border-color .15s,box-shadow .15s}
@@ -940,10 +844,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 }
 @keyframes authIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes authGlow{
-  0%,100%{opacity:1}
-  50%{opacity:0.85}
+  0%,100%{box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,0.06),inset 0 1px 0 rgba(255,255,255,0.08),0 0 60px rgba(201,168,76,0.06)}
+  50%{box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,0.06),inset 0 1px 0 rgba(255,255,255,0.08),0 0 100px rgba(201,168,76,0.12),0 0 40px rgba(96,165,250,0.06)}
 }
-.auth-box{animation:authIn .5s cubic-bezier(.4,0,.2,1),authGlow 5s ease-in-out 0.5s infinite;will-change:opacity;}
+.auth-box{animation:authIn .5s cubic-bezier(.4,0,.2,1),authGlow 5s ease-in-out 0.5s infinite}
 .auth-logo{
   font-family:var(--fd);font-size:52px;letter-spacing:.1em;
   background:linear-gradient(135deg,var(--gold2),#E8C870,var(--gold),#fff8e0,var(--gold2));
@@ -1071,33 +975,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 .config-section{margin-bottom:20px}
 .config-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase}
 
-
-/* Image preview modal */
-.img-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
-.img-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
-.img-modal-overlay img{max-width:92vw;max-height:90vh;border-radius:10px;border:1px solid var(--bdr2);box-shadow:0 0 60px rgba(0,0,0,.8)}
-
-/* ══ PERFORMANCE — GPU layer promotion & paint containment ══ */
-
-/* Promote fixed/sticky elements to own compositor layer */
-.sidebar,.topbar,.main{transform:translateZ(0);backface-visibility:hidden;}
-
-/* Only transition transform & opacity on nav items for smoothness */
-.ni{transition:color .12s,background .12s,text-shadow .12s;}
-.cal-tab,.tf-btn,.ft,.fm-type,.fb-type,.ai-chip,.rc-week-btn{transition:color .12s,background .12s,border-color .12s;}
-
-/* Contain paint on repeated items */
-.cc,.sc,.card,.cl-item,.news-item,.econ-event-row,.ai-msg{contain:layout style;}
-
-/* Reduce motion for users who prefer it */
-@media(prefers-reduced-motion:reduce){
-  .orb,.btn-gold::after,.status-dot,.cc.today::before{animation:none!important;}
-  *{transition-duration:.01ms!important;}
-}
-/* ── CONFIRM EMAIL SCREEN animations ── */
-@keyframes confirmPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
-@keyframes confirmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-
 </style>
 </head>
 <body>
@@ -1159,58 +1036,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
       <div class="auth-divider">or sign in with email</div>
 
-      <!-- STEP 1: normal login/signup form -->
-      <div id="auth-step1">
-        <div class="auth-input-wrap"><input type="email" id="auth-email" placeholder="Email address" onkeydown="if(event.key==='Enter')authSubmit()"></div>
-        <div class="auth-input-wrap"><input type="password" id="auth-pass" placeholder="Password" onkeydown="if(event.key==='Enter')authSubmit()"></div>
-        <div class="auth-input-wrap" id="auth-name-wrap" style="display:none"><input type="text" id="auth-name" placeholder="Your name (e.g. YzenNq)"></div>
-        <div class="auth-spinner" id="auth-spinner"></div>
-        <button class="auth-btn-main" id="auth-submit-btn" onclick="authSubmit()">Sign In</button>
-      </div>
-
-      <!-- STEP 2: confirm email waiting screen -->
-      <div id="auth-step2" style="display:none">
-        <div style="text-align:center;padding:8px 0 4px">
-          <!-- Animated envelope -->
-          <div style="position:relative;width:80px;height:80px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center">
-            <div style="position:absolute;inset:0;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);animation:confirmPulse 2s ease-in-out infinite"></div>
-            <div style="position:absolute;inset:8px;border-radius:50%;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.15);animation:confirmPulse 2s ease-in-out infinite;animation-delay:.3s"></div>
-            <div style="font-size:32px;position:relative;z-index:1;animation:confirmFloat 3s ease-in-out infinite">✉️</div>
-          </div>
-          <div style="font-family:var(--fd);font-size:26px;letter-spacing:.06em;color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.4);margin-bottom:8px">CHECK YOUR INBOX</div>
-          <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.18em;margin-bottom:16px">CONFIRMATION EMAIL SENT TO</div>
-          <div id="confirm-email-display" style="
-            display:inline-block;
-            background:rgba(201,168,76,0.1);
-            border:1px solid rgba(201,168,76,0.25);
-            border-radius:8px;padding:6px 14px;
-            font-size:13px;font-weight:600;color:var(--gold);
-            font-family:var(--fm);letter-spacing:.03em;
-            margin-bottom:20px;
-          "></div>
-          <!-- Steps -->
-          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:left;margin-bottom:18px">
-            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
-              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">1</div>
-              <div style="font-size:12px;color:var(--text2);line-height:1.5">Open the email from <strong style="color:var(--text)">YzenNq Journal</strong></div>
-            </div>
-            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
-              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">2</div>
-              <div style="font-size:12px;color:var(--text2);line-height:1.5">Click the <strong style="color:var(--text)">Confirm your email</strong> button</div>
-            </div>
-            <div style="display:flex;gap:10px;align-items:flex-start">
-              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">3</div>
-              <div style="font-size:12px;color:var(--text2);line-height:1.5">Come back here and <strong style="color:var(--text)">Sign In</strong> with your email & password</div>
-            </div>
-          </div>
-          <!-- Actions -->
-          <button class="auth-btn-main" onclick="backToSignup()" style="background:rgba(255,255,255,0.06);box-shadow:none;border:1px solid rgba(255,255,255,0.12);color:var(--text2);margin-bottom:10px">← Back to Sign In</button>
-          <div style="font-size:11px;color:var(--text3);line-height:1.6">
-            Didn't get it? Check spam or
-            <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="resendConfirm()">resend email</span>
-          </div>
-        </div>
-      </div>
+      <div class="auth-input-wrap"><input type="email" id="auth-email" placeholder="Email address" onkeydown="if(event.key==='Enter')authSubmit()"></div>
+      <div class="auth-input-wrap"><input type="password" id="auth-pass" placeholder="Password" onkeydown="if(event.key==='Enter')authSubmit()"></div>
+      <div class="auth-input-wrap" id="auth-name-wrap" style="display:none"><input type="text" id="auth-name" placeholder="Your name (e.g. YzenNq)"></div>
+      <div class="auth-spinner" id="auth-spinner"></div>
+      <button class="auth-btn-main" id="auth-submit-btn" onclick="authSubmit()">Sign In</button>
 
     </div>
   </div>
@@ -1287,7 +1117,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <span class="tb-title" id="tb-title">Calendar</span>
     </div>
     <div class="tb-right">
-      <button onclick="forceSyncNow()" title="Force sync" style="background:none;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;color:var(--text3);font-size:13px;padding:4px 8px;transition:all .2s;margin-right:2px" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold)'" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--bdr)'">↻</button><span id="save-indicator" style="opacity:0;transition:opacity .3s;display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.12em">
+      <span id="save-indicator" style="opacity:0;transition:opacity .3s;display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.12em">
         <span id="save-ind-icon" style="font-size:13px">☁️</span>
         <span id="save-ind-text">SAVED</span>
       </span>
@@ -1330,49 +1160,36 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
   <!-- TRADES -->
   <div id="page-trades" class="page">
-    <div class="flex aic jsb mb4" style="flex-wrap:wrap;gap:8px">
-      <div class="flex gap2" style="flex-wrap:wrap">
-        <input type="text" id="s-tr" placeholder="Search trades..." style="width:160px" oninput="debouncedRenderTrades()">
-        <select id="f-out" onchange="renderTrades()" style="width:110px">
+    <div class="flex aic jsb mb4">
+      <div class="flex gap2">
+        <input type="text" id="s-tr" placeholder="Search trades..." style="width:180px" oninput="renderTrades()">
+        <select id="f-out" onchange="renderTrades()" style="width:120px">
           <option value="">All Outcomes</option><option value="win">Wins</option><option value="loss">Losses</option><option value="be">Break Even</option>
         </select>
-        <select id="f-sess" onchange="renderTrades()" style="width:110px">
+        <select id="f-sess" onchange="renderTrades()" style="width:120px">
           <option value="">All Sessions</option>
           <option>NY-AM</option><option>NY-Lch</option><option>NY-PM</option><option>London</option><option>Asia</option>
         </select>
-        <select id="f-grade" onchange="renderTrades()" style="width:90px">
-          <option value="">All Grades</option><option>A+</option><option>A</option><option>B</option><option>C</option><option>D</option><option>F</option>
+        <select id="f-grade" onchange="renderTrades()" style="width:100px">
+          <option value="">All Grades</option><option>A</option><option>B</option><option>C</option><option>D</option><option>F</option>
         </select>
       </div>
       <div class="flex gap2">
-        <!-- View toggle -->
-        <div style="display:flex;background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden">
-          <div id="view-cards-btn" onclick="setTradesView('cards')" title="Card view" style="padding:6px 10px;cursor:pointer;color:var(--gold);background:var(--gold-dim);font-size:12px;transition:all .15s">⊞</div>
-          <div id="view-table-btn" onclick="setTradesView('table')" title="Table view" style="padding:6px 10px;cursor:pointer;color:var(--text3);font-size:12px;transition:all .15s">☰</div>
-        </div>
         <button class="btn btn-glass btn-sm" onclick="exportCSV()">↓ CSV</button>
         <button class="btn btn-gold btn-sm" onclick="openTradeForm()">＋ Trade</button>
       </div>
     </div>
-    <!-- Card view (default) -->
-    <div id="trades-cards-view">
-      <div id="trades-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
-      <div id="trades-empty" class="empty"><div class="empty-ic">📈</div><div class="empty-t">No trades yet</div><div class="empty-s">Click + Log Trade to start</div></div>
-    </div>
-    <!-- Table view (hidden by default) -->
-    <div id="trades-table-view" style="display:none">
-      <div class="card">
-        <div class="tw">
-          <table>
-            <thead><tr>
-              <th>Date</th><th>Title</th><th>Ticker</th><th>P&L</th><th>R:R</th><th>Grade</th>
-              <th>Session</th><th>Duration</th><th>Outcome</th><th>PD Array</th><th>Target</th>
-              <th>SMT</th><th>Macro</th><th>Psych</th><th>Mistake</th><th></th>
-            </tr></thead>
-            <tbody id="trades-tbody"></tbody>
-          </table>
-          <div id="trades-empty-table" class="empty" style="display:none"><div class="empty-ic">📈</div><div class="empty-t">No trades yet</div><div class="empty-s">Click + Log Trade to start</div></div>
-        </div>
+    <div class="card">
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Title</th><th>Ticker</th><th>P&L</th><th>R:R</th><th>Grade</th>
+            <th>Session</th><th>Duration</th><th>Outcome</th><th>PD Array</th><th>Target</th>
+            <th>SMT</th><th>Macro</th><th>Psych</th><th>Mistake</th><th></th>
+          </tr></thead>
+          <tbody id="trades-tbody"></tbody>
+        </table>
+        <div id="trades-empty" class="empty"><div class="empty-ic">📈</div><div class="empty-t">No trades yet</div><div class="empty-s">Click + Log Trade to start</div></div>
       </div>
     </div>
   </div>
@@ -1387,7 +1204,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         <div class="cal-tab" id="nb-tab-lessons" onclick="switchNBTab('lessons')">🎓 Lessons Learned</div>
       </div>
       <div class="flex gap2">
-        <input type="text" id="note-s" placeholder="Search..." style="width:180px" oninput="debouncedRenderNotebook()">
+        <input type="text" id="note-s" placeholder="Search..." style="width:180px" oninput="renderNotebook()">
         <button class="btn btn-gold btn-sm" onclick="openNoteModal()">＋ New Note</button>
       </div>
     </div>
@@ -1518,7 +1335,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         <div class="mb3">
           <label style="display:block;margin-bottom:5px">Trade Grade</label>
           <div class="ft-row" id="vf-grades">
-            <div class="ft on" data-v="A+">A+</div><div class="ft on" data-v="A">A</div><div class="ft on" data-v="B">B</div>
+            <div class="ft on" data-v="A">A</div><div class="ft on" data-v="B">B</div>
             <div class="ft on" data-v="C">C</div><div class="ft on" data-v="D">D</div><div class="ft on" data-v="F">F</div>
           </div>
         </div>
@@ -1865,18 +1682,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
     <div class="fm-sub">CUSTOMIZE YOUR TRADE ENVIRONMENT</div>
     <input class="fm-input" id="fm-name" placeholder="e.g. Silver Bullet, 9:30 Judas Swing..." maxlength="40" onkeydown="if(event.key==='Enter')saveNewField()">
     <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.15em;margin-bottom:10px">FIELD TYPE</div>
-    <div class="fm-type-grid" id="field-modal-types" style="grid-template-columns:1fr 1fr;gap:8px">
+    <div class="fm-type-grid" id="field-modal-types">
       <div class="fm-type sel" onclick="selectFMType(this,'yna')"><span class="fm-type-icon">✅</span>Yes/No/N/A</div>
       <div class="fm-type" onclick="selectFMType(this,'text')"><span class="fm-type-icon">📝</span>Text Input</div>
       <div class="fm-type" onclick="selectFMType(this,'rating')"><span class="fm-type-icon">⭐</span>Rating 1-5</div>
-      <div class="fm-type" onclick="selectFMType(this,'list')"><span class="fm-type-icon">📋</span>Pick List</div>
     </div>
-    <!-- List options section, shown only for list type -->
-    <div id="fm-list-section" style="display:none;margin-top:12px">
-      <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.15em;margin-bottom:8px">LIST OPTIONS <span style="color:var(--text3);font-size:8px">(one per line)</span></div>
-      <textarea id="fm-list-options" class="fm-input" style="min-height:90px;resize:vertical;margin-bottom:0" placeholder="e.g.&#10;FVG&#10;OB&#10;IFVG&#10;BISI&#10;CISD"></textarea>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
+    <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn btn-glass" style="flex:1" onclick="closeFieldModal()">Cancel</button>
       <button class="btn btn-gold" style="flex:2" onclick="saveNewField()">＋ Add Field</button>
     </div>
@@ -1942,13 +1753,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
       </div>
       <div class="form-grid mb3">
-        <div class="fg"><label>Trade Grade <span id="grade-auto-hint" style="font-size:9px;color:var(--gold);font-family:var(--fm);opacity:.7;margin-left:4px"></span></label>
+        <div class="fg"><label>Trade Grade</label>
           <select id="t-grade">
-            <option value="A+">A+ — Perfect: high R, no mistakes, psych 8-10</option>
-            <option value="A">A — Excellent execution</option>
-            <option value="B">B — Good trade, minor flaws</option>
-            <option value="C">C — Okay, questionable entry/exit</option>
-            <option value="D">D — Poor, key rules bent</option>
+            <option value="A">A — Perfect execution</option>
+            <option value="B">B — Good trade</option>
+            <option value="C">C — Okay execution</option>
+            <option value="D">D — Poor trade</option>
             <option value="F">F — Rule violation</option>
           </select>
         </div>
@@ -2053,61 +1863,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <!-- ACCOUNT MODAL -->
 <div class="overlay" id="amodal">
-<div class="modal" style="width:460px">
+<div class="modal" style="width:380px">
   <div class="mh"><div class="mt" id="am-t">Add Account</div><div class="mc" onclick="closeM('amodal')">✕</div></div>
-  <div class="mb" style="position:relative;z-index:600">
-    <!-- Account Name -->
-    <div class="fg mb4">
-      <label>Account Name</label>
-      <input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..." autofocus style="position:relative;z-index:601">
-    </div>
-    <!-- Account Type -->
-    <div class="mb4" id="am-type-wrap">
-      <label style="display:block;margin-bottom:8px">Account Type</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div id="am-type-personal" onclick="selectAcctType('personal')"
-          style="padding:14px;border:1px solid var(--gold);border-radius:var(--r2);background:var(--gold-dim);cursor:pointer;text-align:center;transition:all .2s">
-          <div style="font-size:20px;margin-bottom:4px">💵</div>
-          <div style="font-size:13px;font-weight:600;color:var(--gold)">Personal Cash</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">Your own capital</div>
-        </div>
-        <div id="am-type-prop" onclick="selectAcctType('prop')"
-          style="padding:14px;border:1px solid var(--bdr);border-radius:var(--r2);background:var(--g1);cursor:pointer;text-align:center;transition:all .2s">
-          <div style="font-size:20px;margin-bottom:4px">🏢</div>
-          <div style="font-size:13px;font-weight:600;color:var(--text2)">Funded / Prop Firm</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">FTMO, Apex, Topstep...</div>
-        </div>
-      </div>
-    </div>
-    <!-- Personal Cash: Initial Balance -->
-    <div class="fg mb4" id="am-balance-wrap">
-      <label>Initial Balance ($)</label>
-      <div style="position:relative">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm)">$</span>
-        <input type="number" id="am-balance" placeholder="0.00" step="0.01" style="padding-left:24px">
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px">Total amount of money in this account</div>
-    </div>
-    <!-- Prop Firm: Max Drawdown -->
-    <div class="fg mb4" id="am-dd-wrap" style="display:none">
-      <label>Max Drawdown Limit ($)</label>
-      <div style="position:relative">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm)">$</span>
-        <input type="number" id="am-dd" placeholder="2000" style="padding-left:24px">
-      </div>
-      <div style="font-size:10px;color:var(--orange);margin-top:4px;line-height:1.5">
-        ⚠ Enter your Max Loss limit only (e.g. for a $50K account with $2,000 drawdown, enter 2000). This ensures risk math is calculated correctly.
-      </div>
-    </div>
-    <!-- Prop Firm: Firm name -->
-    <div class="fg mb4" id="am-firm-wrap" style="display:none">
-      <label>Prop Firm Name (optional)</label>
-      <input id="am-firm" placeholder="e.g. FTMO, Apex, Topstep, MyFundedFX...">
-    </div>
-  </div>
+  <div class="mb"><div class="fg"><label>Account Name</label><input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..."></div></div>
   <div class="mf">
     <button class="btn btn-glass btn-sm" onclick="closeM('amodal')">Cancel</button>
-    <button class="btn btn-gold" onclick="saveAcct()">Create Account</button>
+    <button class="btn btn-gold" onclick="saveAcct()">Save</button>
   </div>
 </div>
 </div>
@@ -2156,12 +1917,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 @keyframes cloudShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
 @keyframes cloudDot{0%,80%,100%{opacity:.3;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
 @keyframes cloudDoneIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
-
-/* Image preview modal */
-.img-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
-.img-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
-.img-modal-overlay img{max-width:92vw;max-height:90vh;border-radius:10px;border:1px solid var(--bdr2);box-shadow:0 0 60px rgba(0,0,0,.8)}
-
 </style>
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
   <div style="background:rgba(8,10,20,0.98);border:1px solid var(--bdr2);border-radius:20px;padding:28px 32px;width:320px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.8);animation:authIn .2s ease;text-align:center;">
@@ -2202,44 +1957,13 @@ let S={
   psychRating:7,envState:{},tradeImages:[]
 };
 
-// ══ PERF: debounce helper ══
-function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
-// ══ PERF: requestAnimationFrame scheduler — batch DOM writes ══
-let _rafPending=false,_rafQueue=[];
-function rafRun(fn){
-  _rafQueue.push(fn);
-  if(!_rafPending){
-    _rafPending=true;
-    requestAnimationFrame(()=>{
-      const q=_rafQueue.splice(0);
-      _rafPending=false;
-      q.forEach(f=>f());
-    });
-  }
-}
-// ══ PERF: debounced render functions for search inputs ══
-const debouncedRenderTrades=debounce(()=>renderTrades(),120);
-const debouncedRenderNotebook=debounce(()=>renderNotebook(),120);
-
 function save(){
-  // ══ PERF: debounce localStorage — don't serialize+write on every single keystroke ══
-  clearTimeout(save._lsTimer);
-  save._lsTimer=setTimeout(()=>{
-    try{
-      const payload=JSON.stringify(S);
-      localStorage.setItem('yz4',payload);
-      localStorage.setItem('yz4_backup',payload);
-      localStorage.setItem('yz4_ts',Date.now().toString());
-    }catch(e){
-      try{
-        const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
-        keys.forEach(k=>localStorage.removeItem(k));
-        localStorage.setItem('yz4',JSON.stringify(S));
-      }catch(e2){}
-    }
-  },300);
-  // Flash topbar indicator
-  rafRun(()=>{
+  try{
+    const payload=JSON.stringify(S);
+    localStorage.setItem('yz4',payload);
+    localStorage.setItem('yz4_backup',payload);
+    localStorage.setItem('yz4_ts',Date.now().toString());
+    // Flash topbar indicator
     const ind=document.getElementById('save-indicator');
     if(ind){
       const icon=document.getElementById('save-ind-icon');
@@ -2255,10 +1979,16 @@ function save(){
         ind._t2=setTimeout(()=>ind.style.opacity='0',1400);
       },600);
     }
-  });
-  // Debounce Supabase cloud sync — longer delay to batch rapid changes
+  }catch(e){
+    try{
+      const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
+      keys.forEach(k=>localStorage.removeItem(k));
+      localStorage.setItem('yz4',JSON.stringify(S));
+    }catch(e2){}
+  }
+  // Debounce Supabase cloud sync
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,3000);
+  save._sbTimer=setTimeout(saveToSupabase,1500);
 }
 function load(){
   try{
@@ -2301,22 +2031,7 @@ function dateTrades(ds){return acctTrades().filter(t=>t.date===ds);}
 function fmtM(v,s=true){const sgn=s&&v>0?'+':'';return sgn+'$'+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fmtP(v){return v>0?`<span class="pp">${fmtM(v)}</span>`:v<0?`<span class="pn">${fmtM(v)}</span>`:`<span class="pz">$0.00</span>`;}
 function getEnv(t,fn){const fi=S.envFields.findIndex(f=>f.name===fn);if(fi<0||!t.env)return'—';return t.env[fi]||'—';}
-function gradeClass(g){return{'A+':'g-a',A:'g-a',B:'g-b',C:'g-c',D:'g-d',F:'g-f'}[g]||'g-c';}
-/* Auto-grade suggestion based on trade data */
-function autoGrade(pnl,rr,mistake,psychRating,outcome){
-  if(mistake)return 'F';
-  if(outcome==='loss'&&(rr||0)<1)return 'D';
-  const p=psychRating||5;
-  const r=parseFloat(rr)||0;
-  if(outcome==='win'&&r>=3&&p>=8&&!mistake)return 'A+';
-  if(outcome==='win'&&r>=2&&p>=7)return 'A';
-  if(outcome==='win'&&r>=1.5)return 'B';
-  if(outcome==='win')return 'C';
-  if(outcome==='be')return p>=7?'B':'C';
-  if(outcome==='loss'&&r>=1.5)return 'B'; // loss but good risk management
-  if(outcome==='loss'&&r>=1)return 'C';
-  return 'D';
-}
+function gradeClass(g){return{A:'g-a',B:'g-b',C:'g-c',D:'g-d',F:'g-f'}[g]||'g-c';}
 function filterTime(trades,t){
   const now=new Date();const today=now.toISOString().split('T')[0];
   if(t==='today')return trades.filter(x=>x.date===today);
@@ -2373,33 +2088,29 @@ function go(pg){
   rp(pg);
 }
 function rp(p){
-  // ══ PERF: defer heavy renders to next frame so nav click/animation is instant ══
-  const heavy=()=>{
-    if(p==='calendar')rCalendar();
-    if(p==='trades')renderTrades();
-    if(p==='notebook')renderNotebook();
-    if(p==='replay')rReplay();
-    if(p==='summary')renderSummary();
-    if(p==='analytics')renderAnalytics();
-    if(p==='equity')renderEquity();
-    if(p==='visualize')initViz();
-    if(p==='data')renderData();
-    if(p==='checklist')renderCL();
-    if(p==='risk')calcRisk();
-    if(p==='news')loadNews();
-    if(p==='deposit')renderDeposit();
-    if(p==='report')renderReport();
-    if(p==='settings')renderSettings();
-    if(p==='feedback')renderFeedbackHistory();
-    if(p==='aibot'){renderAIStatsStrip();
+  if(p==='calendar')rCalendar();
+  if(p==='trades')renderTrades();
+  if(p==='notebook')renderNotebook();
+  if(p==='replay')rReplay();
+  if(p==='summary')renderSummary();
+  if(p==='analytics')renderAnalytics();
+  if(p==='equity')renderEquity();
+  if(p==='visualize')initViz();
+  if(p==='data')renderData();
+  if(p==='checklist')renderCL();
+  if(p==='risk')calcRisk();
+  if(p==='news')loadNews();
+  if(p==='deposit')renderDeposit();
+  if(p==='report')renderReport();
+  if(p==='settings')renderSettings();
+  if(p==='feedback')renderFeedbackHistory();
+  if(p==='aibot'){
+    renderAIStatsStrip();
     const msgs=document.getElementById('ai-messages');
     if(msgs&&!msgs.innerHTML.trim()){
       appendBotMsg(`Hey! I'm **YzenBot** — your local AI trading coach for **${S.cur}**.\n\nI work 100% offline — no internet needed. I read all your trade data directly and give you instant analysis.\n\nTap a quick chip above or ask me anything. 👇`);
     }
   }
-  };
-  // ══ PERF: run in next animation frame so the page transition paints first ══
-  requestAnimationFrame(heavy);
 }
 
 // ══════ ACCOUNTS ══════
@@ -2426,69 +2137,17 @@ function toggleAcct(){
   },50);
 }
 function switchAcct(a){S.cur=a;document.getElementById('ac-name').textContent=a;document.getElementById('ac-drop').classList.remove('open');save();toast('→ '+a);rCalendar();}
-function openAddAcct(){
-  document.getElementById('am-t').textContent='Add Account';
-  document.getElementById('am-n').value='';
-  document.getElementById('amodal').dataset.mode='add';
-  window._acctType='personal';
-  // Reset to personal cash by default
-  setTimeout(()=>{
-    selectAcctType('personal');
-    const balInp=document.getElementById('am-balance');if(balInp)balInp.value='';
-    const ddInp=document.getElementById('am-dd');if(ddInp)ddInp.value='';
-    const firmInp=document.getElementById('am-firm');if(firmInp)firmInp.value='';
-  },50);
-  openM('amodal');
-}
+function openAddAcct(){document.getElementById('am-t').textContent='Add Account';document.getElementById('am-n').value='';document.getElementById('amodal').dataset.mode='add';openM('amodal');}
 function renameAcct(){document.getElementById('am-t').textContent='Rename';document.getElementById('am-n').value=S.cur;document.getElementById('amodal').dataset.mode='rename';openM('amodal');}
-function selectAcctType(type){
-  window._acctType=type;
-  const personal=document.getElementById('am-type-personal');
-  const prop=document.getElementById('am-type-prop');
-  const balWrap=document.getElementById('am-balance-wrap');
-  const ddWrap=document.getElementById('am-dd-wrap');
-  const firmWrap=document.getElementById('am-firm-wrap');
-  if(type==='personal'){
-    personal.style.border='1px solid var(--gold)';personal.style.background='var(--gold-dim)';
-    personal.querySelector('div:nth-child(2)').style.color='var(--gold)';
-    prop.style.border='1px solid var(--bdr)';prop.style.background='var(--g1)';
-    prop.querySelector('div:nth-child(2)').style.color='var(--text2)';
-    balWrap.style.display='block';ddWrap.style.display='none';firmWrap.style.display='none';
-  } else {
-    prop.style.border='1px solid var(--blue)';prop.style.background='var(--blue-dim)';
-    prop.querySelector('div:nth-child(2)').style.color='var(--blue)';
-    personal.style.border='1px solid var(--bdr)';personal.style.background='var(--g1)';
-    personal.querySelector('div:nth-child(2)').style.color='var(--text2)';
-    balWrap.style.display='none';ddWrap.style.display='block';firmWrap.style.display='block';
-  }
-}
 function saveAcct(){
   const n=document.getElementById('am-n').value.trim();if(!n){toast('⚠ Name required');return;}
-  const mode=document.getElementById('amodal').dataset.mode;
   const isFirst=S.accounts.length===0;
-  const acctType=window._acctType||'personal';
-  const balance=parseFloat(document.getElementById('am-balance')?.value)||0;
-  const dd=parseFloat(document.getElementById('am-dd')?.value)||0;
-  const firm=document.getElementById('am-firm')?.value||'';
-  if(mode==='add'){
-    // Store account as object with metadata
-    if(!S.accountMeta)S.accountMeta={};
-    S.accountMeta[n]={type:acctType,balance:acctType==='personal'?balance:0,maxDD:acctType==='prop'?dd:0,firm};
-    S.accounts.push(n);S.cur=n;
-    // Auto-add deposit if balance provided
-    if(acctType==='personal'&&balance>0){
-      if(!S.deposits)S.deposits=[];
-      S.deposits.push({account:n,type:'Deposit',amount:balance,date:new Date().toISOString().split('T')[0],note:'Initial balance'});
-    }
-  } else {
-    const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;
-    if(S.accountMeta&&S.accountMeta[S.cur]){S.accountMeta[n]=S.accountMeta[S.cur];delete S.accountMeta[S.cur];}
-    S.cur=n;
-  }
+  if(document.getElementById('amodal').dataset.mode==='add'){S.accounts.push(n);S.cur=n;}
+  else{const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;}
   document.getElementById('ac-name').textContent=S.cur;
   save();closeM('amodal');
-  if(isFirst){rCalendar();showSuccessBurst('🏦','ACCOUNT CREATED',n,false);toast('Account created ✓');}
-  else{toast('Account saved ✓');}
+  if(isFirst){rCalendar();toast('Account created ✓ — start logging trades!');}
+  else{toast('Saved ✓');}
 }
 async function delAcct(){
   if(S.accounts.length===1){toast('⚠ Cannot delete last account');return;}
@@ -2578,79 +2237,23 @@ function openTradeForm(ds=''){
   document.getElementById('t-mistake').value='';document.getElementById('t-bias').value='';
   document.getElementById('t-style').value='';document.getElementById('t-emotion').value='';
   document.getElementById('img-prev').innerHTML='';
-  // Auto-grade on pnl/rr change
-  ['t-pnl','t-rr','t-out','t-mistake'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener('change',()=>{
-      const pnl=parseFloat(document.getElementById('t-pnl').value)||0;
-      const rr=parseFloat(document.getElementById('t-rr').value)||0;
-      const mistake=document.getElementById('t-mistake').value;
-      const outcome=document.getElementById('t-out').value;
-      const suggested=autoGrade(pnl,rr,mistake,S.psychRating,outcome);
-      const gradeEl=document.getElementById('t-grade');
-      if(gradeEl)gradeEl.value=suggested;
-    },{once:false});
-  });
   buildPR();buildEnvForm();openM('tmodal');
 }
 function buildPR(){
   document.getElementById('pr-dots').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>
     `<div class="pr-dot${n===S.psychRating?' active':''}" onclick="setPR(${n})">${n}</div>`).join('');
 }
-function setPR(n){
-  S.psychRating=n;
-  document.querySelectorAll('.pr-dot').forEach((d,i)=>d.classList.toggle('active',i+1===n));
-  // Update auto-grade suggestion
-  const pnl=parseFloat((document.getElementById('t-pnl')||{}).value)||0;
-  const rr=parseFloat((document.getElementById('t-rr')||{}).value)||0;
-  const mistake=(document.getElementById('t-mistake')||{}).value||'';
-  const outcome=(document.getElementById('t-out')||{}).value||'win';
-  const suggested=autoGrade(pnl,rr,mistake,n,outcome);
-  const gradeEl=document.getElementById('t-grade');
-  const hint=document.getElementById('grade-auto-hint');
-  if(gradeEl)gradeEl.value=suggested;
-  if(hint)hint.textContent='✦ auto';
-}
+function setPR(n){S.psychRating=n;document.querySelectorAll('.pr-dot').forEach((d,i)=>d.classList.toggle('active',i+1===n));}
 function buildEnvForm(){
-  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>{
-    const type=f.type||'yna';
-    if(type==='text'){
-      return `<div class="yna-wrap">
-        <div class="yna-lbl">${f.name}</div>
-        <input type="text" id="yn-${i}-txt" style="margin-top:4px" placeholder="Enter value..." oninput="S.envState[${i}]=this.value">
-      </div>`;
-    } else if(type==='rating'){
-      return `<div class="yna-wrap">
-        <div class="yna-lbl">${f.name}</div>
-        <div class="yna-row" style="margin-top:4px">${[1,2,3,4,5].map(n=>`
-          <div class="yna na" id="yn-${i}-R${n}" onclick="setRating(${i},${n})" style="padding:5px 0">${n}⭐</div>`).join('')}
-        </div>
-      </div>`;
-    } else if(type==='list'){
-      const opts=f.options||[];
-      return `<div class="yna-wrap">
-        <div class="yna-lbl">${f.name}</div>
-        <select id="yn-${i}-list" style="margin-top:4px;width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bdr2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--ff);font-size:12px;outline:none;cursor:pointer" onchange="S.envState[${i}]=this.value">
-          <option value="">— Select —</option>
-          ${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}
-        </select>
-      </div>`;
-    } else {
-      return `<div class="yna-wrap">
-        <div class="yna-lbl">${f.name}</div>
-        <div class="yna-row">
-          <div class="yna na" id="yn-${i}-Y" onclick="setYNA(${i},'Yes')">Yes</div>
-          <div class="yna na" id="yn-${i}-N" onclick="setYNA(${i},'No')">No</div>
-          <div class="yna na" id="yn-${i}-X" onclick="setYNA(${i},'N/A')">N/A</div>
-        </div>
-      </div>`;
-    }
-  }).join('');
-}
-function setRating(fi,val){
-  S.envState[fi]=val;
-  [1,2,3,4,5].forEach(n=>{const el=document.getElementById(`yn-${fi}-R${n}`);if(el)el.className='yna na';});
-  const el=document.getElementById(`yn-${fi}-R${val}`);if(el){el.classList.remove('na');el.classList.add('y');}
+  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>`
+    <div class="yna-wrap">
+      <div class="yna-lbl">${f.name}</div>
+      <div class="yna-row">
+        <div class="yna na" id="yn-${i}-Y" onclick="setYNA(${i},'Yes')">Yes</div>
+        <div class="yna na" id="yn-${i}-N" onclick="setYNA(${i},'No')">No</div>
+        <div class="yna na" id="yn-${i}-X" onclick="setYNA(${i},'N/A')">N/A</div>
+      </div>
+    </div>`).join('');
 }
 function setYNA(fi,val){
   S.envState[fi]=val;
@@ -2708,61 +2311,12 @@ function saveTrade(){
   const sub=`${pnlStr} · ${t.ticker} · ${t.session}`;
   showSuccessBurst(icon,title,sub,isWin);
 }
-function copyLast(){
-  const l=S.trades[S.trades.length-1];if(!l){toast('No trades yet');return;}
-  // Copy all fields
-  document.getElementById('t-tk').value=l.ticker||'MNQ';
-  try{document.getElementById('t-sess').value=l.session||'NY-AM';}catch(e){}
-  try{document.getElementById('t-bias').value=l.htfBias||'';}catch(e){}
-  try{document.getElementById('t-style').value=l.style||'';}catch(e){}
-  try{document.getElementById('t-out').value=l.outcome||'win';}catch(e){}
-  try{document.getElementById('t-grade').value=l.grade||'A';}catch(e){}
-  try{document.getElementById('t-pd').value=l.pdArray||'';}catch(e){}
-  try{document.getElementById('t-tgt').value=l.target||'';}catch(e){}
-  try{document.getElementById('t-emotion').value=l.emotion||'';}catch(e){}
-  try{document.getElementById('t-mistake').value=l.mistake||'';}catch(e){}
-  try{document.getElementById('t-rr').value=l.rr||'';}catch(e){}
-  // Copy env state
-  if(l.env){
-    S.envState={...l.env};
-    // Re-render env with copied values
-    buildEnvForm();
-    // Re-apply YNA selections
-    Object.entries(l.env).forEach(([fi,val])=>{
-      setTimeout(()=>{
-        const f=S.envFields[parseInt(fi)];
-        if(!f)return;
-        if(typeof val==='number'){setRating(parseInt(fi),val);}
-        else if(f.type==='list'){const el=document.getElementById(`yn-${fi}-list`);if(el){el.value=val;S.envState[fi]=val;}}
-        else{setYNA(parseInt(fi),val);}
-      },50);
-    });
-  }
-  showSuccessBurst('📋','COPIED','Last trade fields loaded',false);
-}
-
-// ══════ TRADES VIEW STATE ══════
-let _tradesView='cards';
-function setTradesView(v){
-  _tradesView=v;
-  const cBtn=document.getElementById('view-cards-btn');
-  const tBtn=document.getElementById('view-table-btn');
-  const cView=document.getElementById('trades-cards-view');
-  const tView=document.getElementById('trades-table-view');
-  if(v==='cards'){
-    cView.style.display='block';tView.style.display='none';
-    if(cBtn){cBtn.style.background='var(--gold-dim)';cBtn.style.color='var(--gold)';}
-    if(tBtn){tBtn.style.background='transparent';tBtn.style.color='var(--text3)';}
-  } else {
-    cView.style.display='none';tView.style.display='block';
-    if(tBtn){tBtn.style.background='var(--gold-dim)';tBtn.style.color='var(--gold)';}
-    if(cBtn){cBtn.style.background='transparent';cBtn.style.color='var(--text3)';}
-  }
-  renderTrades();
-}
+function copyLast(){const l=S.trades[S.trades.length-1];if(!l){toast('No trades');return;}document.getElementById('t-tk').value=l.ticker;document.getElementById('t-sess').value=l.session;document.getElementById('t-bias').value=l.htfBias||'';toast('Copied ✓');}
 
 // ══════ TRADES PAGE ══════
 function renderTrades(){
+  const tbody=document.getElementById('trades-tbody');
+  const empty=document.getElementById('trades-empty');
   const q=(document.getElementById('s-tr').value||'').toLowerCase();
   const fOut=document.getElementById('f-out').value;
   const fSess=document.getElementById('f-sess').value;
@@ -2774,115 +2328,27 @@ function renderTrades(){
     if(q&&![(t.ticker||''),(t.notes||''),(t.title||''),(t.pdArray||'')].some(s=>s.toLowerCase().includes(q)))return false;
     return true;
   });
-  const sorted=[...trades].reverse();
-
-  if(_tradesView==='cards'){
-    const grid=document.getElementById('trades-cards-grid');
-    const empty=document.getElementById('trades-empty');
-    if(!sorted.length){grid.innerHTML='';empty.style.display='block';return;}
-    empty.style.display='none';
-    grid.innerHTML=sorted.map(t=>{
-      const pnl=parseFloat(t.pnl)||0;
-      const isWin=t.outcome==='win';const isLoss=t.outcome==='loss';const isBE=t.outcome==='be';
-      const outcomeColor=isWin?'var(--green)':isLoss?'var(--red)':'var(--blue)';
-      const outcomeBg=isWin?'rgba(34,211,160,0.08)':isLoss?'rgba(248,113,113,0.08)':'rgba(96,165,250,0.08)';
-      const pnlStr=(pnl>=0?'+':'')+`$${Math.abs(pnl).toFixed(2)}`;
-      const gc=gradeClass(t.grade);
-      const gradeColors={gA:'var(--green)',gB:'var(--blue)',gC:'#eab308',gD:'var(--orange)',gF:'var(--red)'};
-      const gradeGlow={gA:'rgba(34,211,160,0.35)',gB:'rgba(96,165,250,0.35)',gC:'rgba(234,179,8,0.3)',gD:'rgba(251,146,60,0.3)',gF:'rgba(248,113,113,0.35)'};
-      const gColor=gradeColors[gc]||'var(--text3)';
-      const gGlow=gradeGlow[gc]||'transparent';
-      const hasImg=t.images&&t.images.length;
-      const firstImg=hasImg?t.images[0]:'';
-      const idx=S.trades.indexOf(t);
-      return `<div class="trade-card" style="
-        background:rgba(255,255,255,0.04);
-        border:1px solid rgba(255,255,255,0.08);
-        border-top:2px solid ${outcomeColor};
-        border-radius:16px;overflow:hidden;
-        transition:transform .18s,box-shadow .18s,border-color .18s;
-        cursor:pointer;position:relative;
-        contain:layout style;
-      " onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.5),0 0 24px ${outcomeBg.replace('0.08','0.15')}';this.style.borderColor='${outcomeColor}'"
-        onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(255,255,255,0.08)'">
-        ${hasImg?`<div style="width:100%;height:120px;overflow:hidden;position:relative" onclick="openImgModal('${firstImg}')">
-          <img src="${firstImg}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
-          ${t.images.length>1?`<div style="position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,.7);border-radius:4px;padding:2px 6px;font-family:var(--fm);font-size:9px;color:var(--text2)">+${t.images.length-1} more</div>`:''}
-          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(6,8,16,0.8))"></div>
-        </div>`:''}
-        <div style="padding:14px 16px">
-          <!-- Header row: ticker + grade -->
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-            <div>
-              <div style="font-family:var(--fd);font-size:22px;letter-spacing:.04em;color:var(--text);line-height:1">${t.ticker}</div>
-              <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.1em;margin-top:2px">${t.date} · ${t.session||'—'}</div>
-            </div>
-            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <div style="font-family:var(--fd);font-size:26px;letter-spacing:.02em;color:${gColor};text-shadow:0 0 16px ${gGlow};line-height:1">${t.grade||'—'}</div>
-              <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:9px;font-family:var(--fm);background:${outcomeBg};color:${outcomeColor};border:1px solid ${outcomeColor}44">${t.outcome.toUpperCase()}</span>
-            </div>
-          </div>
-          ${t.title?`<div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:500;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${t.title}</div>`:''}
-          <!-- Key stats row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-            <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px;text-align:center">
-              <div style="font-family:var(--fd);font-size:18px;color:${pnl>=0?'var(--green)':'var(--red)'};text-shadow:0 0 12px ${pnl>=0?'var(--green-glow)':'var(--red-glow)'};line-height:1">${pnlStr}</div>
-              <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em;margin-top:2px">P&L</div>
-            </div>
-            <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px;text-align:center">
-              <div style="font-family:var(--fd);font-size:18px;color:var(--gold);line-height:1">${t.rr?t.rr+'R':'—'}</div>
-              <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em;margin-top:2px">R:R</div>
-            </div>
-            <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px;text-align:center">
-              <div style="font-family:var(--fd);font-size:18px;color:${(t.psychRating||0)>=7?'var(--green)':(t.psychRating||0)<=4?'var(--red)':'var(--text)'};line-height:1">${t.psychRating||'—'}</div>
-              <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em;margin-top:2px">PSYCH</div>
-            </div>
-          </div>
-          <!-- Tags row -->
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
-            ${t.duration?`<span style="padding:2px 7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;font-size:9px;font-family:var(--fm);color:var(--text3)">⏱ ${t.duration}</span>`:''}
-            ${t.pdArray?`<span style="padding:2px 7px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);border-radius:4px;font-size:9px;font-family:var(--fm);color:var(--gold)">${t.pdArray}</span>`:''}
-            ${t.emotion?`<span style="padding:2px 7px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:4px;font-size:9px;font-family:var(--fm);color:var(--purple)">${t.emotion}</span>`:''}
-            ${t.mistake?`<span style="padding:2px 7px;background:var(--red-dim);border:1px solid rgba(248,113,113,.2);border-radius:4px;font-size:9px;font-family:var(--fm);color:var(--red)">⚠ ${t.mistake}</span>`:''}
-            ${t.htfBias?`<span style="padding:2px 7px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);border-radius:4px;font-size:9px;font-family:var(--fm);color:var(--blue)">${t.htfBias}</span>`:''}
-          </div>
-          ${t.notes?`<div style="font-size:10px;color:var(--text3);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding-top:8px;border-top:1px solid var(--bdr)">${t.notes}</div>`:''}
-          <!-- Delete -->
-          <div style="display:flex;justify-content:flex-end;margin-top:8px">
-            <button class="btn btn-red btn-sm" style="padding:3px 8px;font-size:9px;opacity:.6;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'" onclick="event.stopPropagation();delTrade(${idx})">✕ Delete</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  } else {
-    // Table view
-    const tbody=document.getElementById('trades-tbody');
-    const empty=document.getElementById('trades-empty-table');
-    if(!sorted.length){tbody.innerHTML='';empty.style.display='block';return;}
-    empty.style.display='none';
-    tbody.innerHTML=sorted.map(t=>`
-      <tr>
-        <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.date}</td>
-        <td style="font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${t.title||'—'}</td>
-        <td style="font-weight:700;color:var(--text)">${t.ticker}</td>
-        <td>${fmtP(parseFloat(t.pnl)||0)}</td>
-        <td style="font-family:var(--fm);color:var(--text2)">${t.rr?t.rr+'R':'—'}</td>
-        <td><span class="grade ${gradeClass(t.grade)}">${t.grade||'—'}</span></td>
-        <td style="font-size:10px;color:var(--text2)">${t.session||'—'}</td>
-        <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.duration||'—'}</td>
-        <td><span class="tag ${t.outcome==='win'?'tw2':t.outcome==='loss'?'tl2':'tb2'}">${t.outcome.toUpperCase()}</span></td>
-        <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.pdArray||'—'}</td>
-        <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.target||'—'}</td>
-        <td style="font-family:var(--fm);font-size:10px;color:${getEnv(t,'SMT?')==='Yes'?'var(--green)':getEnv(t,'SMT?')==='No'?'var(--red)':'var(--text3)'}">${getEnv(t,'SMT?')}</td>
-        <td style="font-family:var(--fm);font-size:10px">${getEnv(t,'Macro')}</td>
-        <td style="font-family:var(--fm);font-size:10px;color:${t.psychRating>=7?'var(--green)':t.psychRating<=4?'var(--red)':'var(--text2)'}">${t.psychRating||'—'}/10</td>
-        <td style="font-size:10px;color:var(--red)">${t.mistake||'—'}</td>
-        <td style="text-align:right">
-          ${t.images&&t.images.length?`<div style="display:flex;gap:3px;justify-content:flex-end">${t.images.slice(0,2).map(img=>`<img src="${img}" onclick="openImgModal('${img}')" style="width:36px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--bdr);cursor:pointer;transition:transform .2s" onmouseover="this.style.transform='scale(1.8)'" onmouseout="this.style.transform='scale(1)'">`).join('')}</div>`:''}
-          <button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px;margin-top:2px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button>
-        </td>
-      </tr>`).join('');
-  }
+  if(!trades.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=[...trades].reverse().map(t=>`
+    <tr>
+      <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.date}</td>
+      <td style="font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${t.title||'—'}</td>
+      <td style="font-weight:700;color:var(--text)">${t.ticker}</td>
+      <td>${fmtP(parseFloat(t.pnl)||0)}</td>
+      <td style="font-family:var(--fm);color:var(--text2)">${t.rr?t.rr+'R':'—'}</td>
+      <td><span class="grade ${gradeClass(t.grade)}">${t.grade||'—'}</span></td>
+      <td style="font-size:10px;color:var(--text2)">${t.session||'—'}</td>
+      <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.duration||'—'}</td>
+      <td><span class="tag ${t.outcome==='win'?'tw2':t.outcome==='loss'?'tl2':'tb2'}">${t.outcome.toUpperCase()}</span></td>
+      <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.pdArray||'—'}</td>
+      <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.target||'—'}</td>
+      <td style="font-family:var(--fm);font-size:10px;color:${getEnv(t,'SMT?')==='Yes'?'var(--green)':getEnv(t,'SMT?')==='No'?'var(--red)':'var(--text3)'}">${getEnv(t,'SMT?')}</td>
+      <td style="font-family:var(--fm);font-size:10px">${getEnv(t,'Macro')}</td>
+      <td style="font-family:var(--fm);font-size:10px;color:${t.psychRating>=7?'var(--green)':t.psychRating<=4?'var(--red)':'var(--text2)'}">${t.psychRating||'—'}/10</td>
+      <td style="font-size:10px;color:var(--red)">${t.mistake||'—'}</td>
+      <td><button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button></td>
+    </tr>`).join('');
 }
 async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
 
@@ -3253,12 +2719,7 @@ function renderEquity(){
 function drawEquityCurve(trades){
   const canvas=document.getElementById('equity-canvas');
   const ctx=canvas.getContext('2d');
-  // ══ PERF: read offsetWidth once (forces layout), only reset if changed ══
-  const dpr=window.devicePixelRatio||1;
-  const cssW=canvas.parentElement?canvas.parentElement.clientWidth:canvas.offsetWidth;
-  const newW=Math.round(cssW*dpr);
-  const newH=520;
-  if(canvas.width!==newW||canvas.height!==newH){canvas.width=newW;canvas.height=newH;canvas.style.width=cssW+'px';canvas.style.height=Math.round(newH/dpr)+'px';}
+  canvas.width=canvas.offsetWidth*2;canvas.height=520;
   const W=canvas.width,H=canvas.height,PAD=40;
   ctx.clearRect(0,0,W,H);
   if(!trades.length){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.font='24px DM Sans';ctx.textAlign='center';ctx.fillText('No trades to display',W/2,H/2);return;}
@@ -3302,12 +2763,7 @@ function drawEquityCurve(trades){
 function drawDDCurve(trades){
   const canvas=document.getElementById('dd-canvas');if(!canvas)return;
   const ctx=canvas.getContext('2d');
-  // ══ PERF: read width once, skip reset if unchanged ══
-  const dpr=window.devicePixelRatio||1;
-  const cssW=canvas.parentElement?canvas.parentElement.clientWidth:canvas.offsetWidth;
-  const newW=Math.round(cssW*dpr);
-  const newH=240;
-  if(canvas.width!==newW||canvas.height!==newH){canvas.width=newW;canvas.height=newH;canvas.style.width=cssW+'px';canvas.style.height=Math.round(newH/dpr)+'px';}
+  canvas.width=canvas.offsetWidth*2;canvas.height=240;
   const W=canvas.width,H=canvas.height,PAD=20;
   ctx.clearRect(0,0,W,H);
   let peak=0,eq=0,dds=[0];
@@ -3505,15 +2961,9 @@ function renderSettings(){
   document.getElementById('s-mwl').value=S.settings.mwl||1500;
   document.getElementById('s-maxt').value=S.settings.maxT||2;
   document.getElementById('s-be').value=S.settings.be||20;
-  document.getElementById('env-s').innerHTML=S.envFields.map((f,i)=>{
-    const typeLabels={yna:'YES/NO',text:'TEXT',rating:'RATING',list:'LIST'};
-    const typeColors={yna:'var(--green)',text:'var(--blue)',rating:'var(--gold)',list:'var(--purple)'};
-    const tl=typeLabels[f.type||'yna']||'YES/NO';
-    const tc=typeColors[f.type||'yna']||'var(--green)';
-    const optCount=f.type==='list'&&f.options?` · ${f.options.length} opts`:'';
-    return `<div class="mr"><span class="mr-k">${f.name} <span style="font-size:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:1px 5px;color:${tc};font-family:var(--fm);letter-spacing:.08em">${tl}${optCount}</span></span>
-    <button class="btn btn-red btn-sm" style="padding:2px 6px;font-size:9px" onclick="removeEnvField(${i})">✕</button></div>`;
-  }).join('');
+  document.getElementById('env-s').innerHTML=S.envFields.map((f,i)=>`
+    <div class="mr"><span class="mr-k">${f.name}</span>
+    <button class="btn btn-red btn-sm" style="padding:2px 6px;font-size:9px" onclick="removeEnvField(${i})">✕</button></div>`).join('');
   document.getElementById('cl-s').innerHTML=S.checklist.items.map((item,i)=>`
     <div class="mr"><span class="mr-k"><span class="grade ${gradeClass('A')}" style="font-size:9px;width:18px;height:18px">${item.pts}p</span> ${item.name}${item.req?' (REQ)':''}</span>
     <button class="btn btn-red btn-sm" style="padding:2px 6px;font-size:9px" onclick="removeCLItem(${i})">✕</button></div>`).join('');
@@ -3537,31 +2987,13 @@ function closeFieldModal(){document.getElementById('field-modal').classList.remo
 function selectFMType(el,type){
   document.querySelectorAll('#field-modal .fm-type').forEach(t=>t.classList.remove('sel'));
   el.classList.add('sel');window._fmType=type;
-  const ls=document.getElementById('fm-list-section');
-  if(ls)ls.style.display=type==='list'?'block':'none';
 }
 function saveNewField(){
   const n=document.getElementById('fm-name').value.trim();
   if(!n){document.getElementById('fm-name').style.borderColor='var(--red)';setTimeout(()=>document.getElementById('fm-name').style.borderColor='',800);return;}
-  const type=window._fmType||'yna';
-  const field={name:n,type};
-  if(type==='list'){
-    const raw=document.getElementById('fm-list-options').value;
-    field.options=raw.split('\n').map(o=>o.trim()).filter(Boolean);
-    if(!field.options.length){toast('⚠ Add at least one list option');return;}
-  }
-  S.envFields.push(field);
+  S.envFields.push({name:n,type:window._fmType||'yna'});
   save();renderSettings();closeFieldModal();
   showSuccessBurst('✅','FIELD ADDED',n,false);
-}
-function addEnvField(){
-  document.getElementById('fm-name').value='';
-  document.getElementById('fm-list-options').value='';
-  document.getElementById('fm-list-section').style.display='none';
-  window._fmType='yna';
-  document.querySelectorAll('#field-modal .fm-type').forEach((t,i)=>t.classList.toggle('sel',i===0));
-  document.getElementById('field-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('fm-name').focus(),150);
 }
 let _clReq=false;
 function addCLItem(){
@@ -3617,26 +3049,16 @@ function showSuccessBurst(icon,title,sub,doConfetti){
 
 // ══════ DAILY QUOTE ══════
 const QUOTES=[
-  {text:'The market is a device for transferring money from the impatient to the patient.',author:'Warren Buffett'},
-  {text:'Do not focus on making money. Focus on protecting what you have.',author:'Paul Tudor Jones'},
-  {text:"It's not whether you're right or wrong, but how much you make when right and lose when wrong.",author:'George Soros'},
-  {text:'The elements of good trading are: cutting losses, cutting losses, and cutting losses.',author:'Ed Seykota'},
-  {text:"I'm always thinking about losing money as opposed to making money.",author:'Paul Tudor Jones'},
-  {text:'Win or lose, everybody gets what they want out of the market.',author:'Ed Seykota'},
-  {text:'The key to trading success is emotional discipline.',author:'Victor Sperandeo'},
-  {text:'Risk comes from not knowing what you are doing.',author:'Warren Buffett'},
-  {text:'If you personalize losses, you cannot trade.',author:'Bruce Kovner'},
-  {text:'A loss never bothers me after I take it. Being wrong and not taking the loss — that does the damage.',author:'Jesse Livermore'},
-  {text:'Every time you make a trade, you should be able to say that you followed your rules.',author:'Mark Douglas'},
-  {text:'Price is the only truth in the market. Everything else is an opinion.',author:'ICT · Michael Huddleston'},
-  {text:'Your higher timeframe tells the story. Your lower timeframe is where you find the entry.',author:'ICT · Michael Huddleston'},
-  {text:'The liquidity is the target. Always has been.',author:'ICT · Michael Huddleston'},
-  {text:"Don't trade what you think. Trade what you see.",author:'ICT · Michael Huddleston'},
-  {text:'Amateurs go broke by taking large losses. Professionals go broke by taking small profits.',author:'Tom Hougaard'},
-  {text:'There is only one side of the market — not bull or bear — but the right side.',author:'Jesse Livermore'},
-  {text:"The trend is your friend until the end when it bends.",author:'Ed Seykota'},
-  {text:'The difference between winners and losers is that winners do what they know they should, even when they do not feel like it.',author:'Mark Douglas'},
-  {text:'Simplicity is the key to brilliance.',author:'Bruce Lee'},
+  {text:"The market rewards patience and punishes impulsiveness.",author:"— Trading Proverb"},
+  {text:"Your job is not to predict the future, but to react correctly to the present.",author:"— ICT"},
+  {text:"Discipline is doing what you hate to do but doing it like you love it.",author:"— Mike Tyson"},
+  {text:"The goal is not to be right. The goal is to make money.",author:"— Marty Schwartz"},
+  {text:"Risk comes from not knowing what you're doing.",author:"— Warren Buffett"},
+  {text:"The best traders have no ego. You have to swallow your pride and get out of losses.",author:"— Tom Baldwin"},
+  {text:"Plan the trade, trade the plan.",author:"— Trading Proverb"},
+  {text:"Opportunities are made up easier than losses.",author:"— Trading Proverb"},
+  {text:"Don't focus on making money; focus on protecting what you have.",author:"— Paul Tudor Jones"},
+  {text:"Process over outcome. Every single day.",author:"— YzenNq"},
 ];
 function showDailyQuote(){
   const today=new Date().toISOString().split('T')[0];
@@ -3662,37 +3084,16 @@ function selectFBType(type){
     document.getElementById('fb-'+t).classList.toggle('sel',t===type);
   });
 }
-async function submitFeedback(){
+function submitFeedback(){
   const msg=document.getElementById('fb-msg').value.trim();
   if(!msg){toast('⚠ Write a message first');return;}
   const name=document.getElementById('fb-name').value.trim()||'Anonymous';
-  const typeLabels={bug:'🐛 Bug Report',improve:'💡 Improvement',feature:'✨ Feature Request'};
-  const typeLabel=typeLabels[_fbType]||_fbType;
-  const date=new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'});
-
-  // Save locally
   if(!S.feedback)S.feedback=[];
   S.feedback.push({type:_fbType,msg,name,date:new Date().toISOString().split('T')[0]});
   save();
   document.getElementById('fb-msg').value='';
   renderFeedbackHistory();
-
-  // Send via EmailJS
-  try{
-    await emailjs.send('service_4pltmnv','template_z9pa4yo',{
-      type:typeLabel,
-      from_name:name,
-      message:msg,
-      date:date,
-      reply_to:currentUser?.email||'no-email'
-    });
-    showSuccessBurst('📧','FEEDBACK SENT','Delivered to your inbox ✓',false);
-  }catch(e){
-    console.error('EmailJS error:',e);
-    // Still saved locally, just notify
-    showSuccessBurst('🙏','FEEDBACK SAVED','Saved locally (email failed)',false);
-    toast('⚠ Email failed — saved locally');
-  }
+  showSuccessBurst('🙏','FEEDBACK SENT','Thank you — we read every message',false);
 }
 function renderFeedbackHistory(){
   const list=document.getElementById('fb-hist-list');
@@ -4333,69 +3734,47 @@ initAuth();
 document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
 if(!S.feedback)S.feedback=[];
 setInterval(()=>{if(S.checklist.autoClear&&S.checklist.lastClear&&(Date.now()-S.checklist.lastClear)/3600000>=4){S.checklist.items.forEach(i=>i.on=false);S.checklist.lastClear=Date.now();save();}},60000);
-// ── Real-time sync when user returns to tab/app ──
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&SB&&currentUser&&currentUser.id!=='demo'){
-    console.log('[SYNC] Tab focused — refreshing data from cloud');
-    loadUserData().then(()=>{
-      // Re-render current page with fresh data
-      const activePage=document.querySelector('.page.active');
-      if(activePage){
-        const pg=activePage.id.replace('page-','');
-        rp(pg);
-      }
-    });
-  }
-});
-
-// ── Sync before page unload ──
-window.addEventListener('beforeunload',()=>{
-  if(SB&&currentUser&&currentUser.id!=='demo'){
-    // Synchronous save attempt
-    saveToSupabase();
-  }
-});
-
 window.addEventListener('resize',()=>{if(document.getElementById('page-equity').classList.contains('active'))renderEquity();});
 setTimeout(showDailyQuote,1800);
 
-// ── iOS rubber-band / bounce-back fix ──
+// ── iOS rubber-band / overscroll complete fix ──
 (function(){
-  // Fix 1: html+body level — prevents the page itself from bouncing
-  document.documentElement.style.cssText+='height:100%;overflow:hidden;position:fixed;width:100%;';
-  document.body.style.cssText+='height:100%;overflow:hidden;position:fixed;width:100%;';
+  // Prevent body-level bounce
+  document.addEventListener('touchmove', function(e){
+    // Allow scrolling inside scrollable elements, block everywhere else
+    let el = e.target;
+    let scrollable = false;
+    while(el && el !== document.body){
+      const style = window.getComputedStyle(el);
+      const overflow = style.overflow + style.overflowY;
+      const canScroll = /auto|scroll/.test(overflow);
+      if(canScroll && el.scrollHeight > el.clientHeight){
+        // Check if actually at a boundary
+        const atTop = el.scrollTop <= 0;
+        const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        const touchY = e.touches[0].clientY;
+        if(!(atTop && touchY > (el._touchStartY||0)) && !(atBottom && touchY < (el._touchStartY||0))){
+          scrollable = true;
+          break;
+        }
+      }
+      el = el.parentElement;
+    }
+    if(!scrollable) e.preventDefault();
+  }, {passive: false});
 
-  // Fix 2: for each scrollable container, clamp scroll position on touchmove
-  function fixScroller(el){
-    let lastY=0;
-    el.addEventListener('touchstart',function(e){
-      lastY=e.touches[0].clientY;
-      // Ensure we're never exactly at 0 or max (iOS bounces at exact boundaries)
-      if(el.scrollTop===0)el.scrollTop=1;
-      const maxScroll=el.scrollHeight-el.clientHeight;
-      if(el.scrollTop>=maxScroll)el.scrollTop=maxScroll-1;
-    },{passive:true});
-    el.addEventListener('touchmove',function(e){
-      const y=e.touches[0].clientY;
-      const goingUp=y>lastY;
-      lastY=y;
-      // Block scroll if at boundary and trying to go past it
-      if(goingUp&&el.scrollTop<=0){e.preventDefault();return;}
-      if(!goingUp&&el.scrollTop>=el.scrollHeight-el.clientHeight){e.preventDefault();return;}
-      e.stopPropagation();
-    },{passive:false});
-  }
+  // Track touch start per element
+  document.addEventListener('touchstart', function(e){
+    let el = e.target;
+    while(el && el !== document.body){
+      el._touchStartY = e.touches[0].clientY;
+      el = el.parentElement;
+    }
+  }, {passive: true});
 
-  // Apply to all scrollable containers after DOM ready
-  function applyFixes(){
-    ['.main','.mb','nav','.sidebar','#ai-messages'].forEach(sel=>{
-      document.querySelectorAll(sel).forEach(el=>{
-        if(el&&!el._iosfixed){el._iosfixed=true;fixScroller(el);}
-      });
-    });
-  }
-  document.addEventListener('DOMContentLoaded',applyFixes);
-  setTimeout(applyFixes,500);
+  // CSS-level overscroll kill
+  document.documentElement.style.overscrollBehavior = 'none';
+  document.body.style.overscrollBehavior = 'none';
 })();
 
 // ══════════════════════════════════════
@@ -4405,41 +3784,22 @@ setTimeout(showDailyQuote,1800);
 
 const SQL_SCHEMA = `
 -- Run this in your Supabase SQL Editor
--- Step 1: Create table
 CREATE TABLE IF NOT EXISTS yz_journal (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   user_email text,
   user_name text,
   data jsonb DEFAULT '{}'::jsonb,
   updated_at timestamptz DEFAULT now()
 );
-
--- Step 2: Enable Row Level Security
 ALTER TABLE yz_journal ENABLE ROW LEVEL SECURITY;
-
--- Step 3: Drop old policies if they exist
-DROP POLICY IF EXISTS "Users own data" ON yz_journal;
-DROP POLICY IF EXISTS "Admin read all" ON yz_journal;
-
--- Step 4: Create clean policies
-CREATE POLICY "Users can do everything with own data"
-  ON yz_journal FOR ALL
-  TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
--- Step 5: Create index
+CREATE POLICY "Users own data" ON yz_journal
+  FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin read all" ON yz_journal
+  FOR SELECT USING (
+    (SELECT email FROM auth.users WHERE id = auth.uid()) = current_setting('app.admin_email', true)
+  );
 CREATE INDEX IF NOT EXISTS idx_yz_journal_user ON yz_journal(user_id);
-
--- Step 6: Auto-update timestamp
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS yz_journal_updated_at ON yz_journal;
-CREATE TRIGGER yz_journal_updated_at
-  BEFORE UPDATE ON yz_journal
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 `.trim();
 
 function copySQL(){
@@ -4534,67 +3894,33 @@ function switchTab(tab){
   document.getElementById('tab-signup').classList.toggle('active',tab==='signup');
   document.getElementById('auth-submit-btn').textContent=tab==='login'?'Sign In':'Create Account';
   document.getElementById('auth-name-wrap').style.display=tab==='signup'?'block':'none';
-  // Reset OTP step
-  document.getElementById('auth-step1').style.display='block';
-  document.getElementById('auth-step2').style.display='none';
   clearAuthMessages();
 }
 
-// ── Auth state ──
-let _signupEmail='';
-
 async function authSubmit(){
-  if(!SB){showAuthError('Supabase not configured');return;}
-  const email=document.getElementById('auth-email').value.trim().toLowerCase();
+  if(!SB){showAuthError('Please configure Supabase first (tap ⚙️ Settings below)');return;}
+  const email=document.getElementById('auth-email').value.trim();
   const pass=document.getElementById('auth-pass').value;
   const isSignup=document.getElementById('tab-signup').classList.contains('active');
   if(!email||!pass){showAuthError('Email and password required');return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthError('Enter a valid email address');return;}
-  if(pass.length<8){showAuthError('Password must be at least 8 characters');return;}
+  if(pass.length<6){showAuthError('Password must be at least 6 characters');return;}
   showSpinner(true);clearAuthMessages();
   try{
     if(isSignup){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
       const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
-      if(data?.user&&data.user.identities&&data.user.identities.length===0){
-        throw new Error('An account with this email already exists — sign in instead.');
-      }
-      _signupEmail=email;
-      // Show beautiful confirm screen
-      document.getElementById('confirm-email-display').textContent=email;
-      document.getElementById('auth-step1').style.display='none';
-      document.getElementById('auth-step2').style.display='block';
-      clearAuthMessages();
+      showAuthSuccess('Account created! Check your email to confirm, then sign in.');
+      switchTab('login');
     }else{
       const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
-      if(error){
-        if(error.message.includes('Invalid login')||error.message.includes('invalid_credentials'))throw new Error('Incorrect email or password.');
-        if(error.message.includes('Email not confirmed'))throw new Error('Please confirm your email first — check your inbox.');
-        throw error;
-      }
-      if(!data?.user)throw new Error('Login failed. Please try again.');
+      if(error)throw error;
       currentUser=data.user;
       await loadUserData();
       enterApp();
     }
   }catch(e){showAuthError(e.message||'Authentication failed');}
   finally{showSpinner(false);}
-}
-
-async function resendConfirm(){
-  if(!_signupEmail){return;}
-  try{
-    await SB.auth.resend({type:'signup',email:_signupEmail});
-    showAuthSuccess('Confirmation email resent — check your inbox.');
-  }catch(e){showAuthError('Could not resend — try again in a minute.');}
-}
-
-function backToSignup(){
-  document.getElementById('auth-step2').style.display='none';
-  document.getElementById('auth-step1').style.display='block';
-  clearAuthMessages();
-  switchTab('login');
 }
 
 async function authDemo(){
@@ -4606,97 +3932,27 @@ async function authDemo(){
 
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
-  console.log('[SYNC] Loading data for user:', currentUser.email);
-  showSyncStatus('loading');
   try{
-    const{data,error}=await SB
-      .from('yz_journal')
-      .select('data,updated_at')
-      .eq('user_id',currentUser.id)
-      .maybeSingle(); // maybeSingle() doesn't throw on no rows
-    
-    if(error){
-      console.error('[SYNC] Load error:', error.message);
-      // If table doesn't exist, create it
-      if(error.message.includes('does not exist')||error.code==='42P01'){
-        await createTableIfNeeded();
-        showSyncStatus('ready');
-        return;
-      }
-      showSyncStatus('error', error.message);
-      return;
-    }
-    
-    if(data&&data.data){
+    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
+    if(data&&data.data&&Object.keys(data.data).length>0){
       const remote=data.data;
-      const remoteTrades=(remote.trades||[]).length;
-      console.log('[SYNC] Remote data found — trades:', remoteTrades);
-      // ALWAYS load remote data — remote is the source of truth
-      if(remote.trades!=null)S.trades=remote.trades;
-      if(remote.notes!=null)S.notes=remote.notes;
-      if(remote.deposits!=null)S.deposits=remote.deposits;
-      if(remote.accounts!=null)S.accounts=remote.accounts;
-      if(remote.settings!=null)S.settings={...S.settings,...remote.settings};
-      if(remote.envFields!=null)S.envFields=remote.envFields;
-      if(remote.checklist!=null)S.checklist={...S.checklist,...remote.checklist};
-      if(remote.filterPresets!=null)S.filterPresets=remote.filterPresets;
-      if(remote.newsEvents!=null)S.newsEvents=remote.newsEvents;
-      if(remote.replayNotes!=null)S.replayNotes=remote.replayNotes;
-      // Sync localStorage with remote
-      localStorage.setItem('yz4',JSON.stringify(S));
-      localStorage.setItem('yz4_ts', Date.now().toString());
-      showSyncStatus('loaded', remoteTrades+' trades synced ✓');
-      console.log('[SYNC] Remote data loaded successfully');
-    } else {
-      // No remote data yet — this is first login, push local data up
-      console.log('[SYNC] No remote data — pushing local data to cloud');
-      await saveToSupabase();
-      showSyncStatus('loaded','Data uploaded ✓');
+      // Merge remote data into S
+      if(remote.trades)S.trades=remote.trades;
+      if(remote.notes)S.notes=remote.notes;
+      if(remote.deposits)S.deposits=remote.deposits;
+      if(remote.accounts)S.accounts=remote.accounts;
+      if(remote.settings)S.settings={...S.settings,...remote.settings};
+      if(remote.envFields)S.envFields=remote.envFields;
+      if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
+      if(remote.filterPresets)S.filterPresets=remote.filterPresets;
+      if(remote.newsEvents)S.newsEvents=remote.newsEvents;
+      if(remote.replayNotes)S.replayNotes=remote.replayNotes;
     }
-  }catch(e){
-    console.error('[SYNC] Exception:', e);
-    showSyncStatus('error', e.message);
-  }
-}
-
-async function createTableIfNeeded(){
-  // Guide user to run SQL
-  console.log('[SYNC] Table missing — showing SQL guide');
-  toast('⚠️ Run the SQL in Supabase first — tap Settings → Copy SQL');
-}
-
-function showSyncStatus(status, msg=''){
-  const ind=document.getElementById('save-indicator');
-  const icon=document.getElementById('save-ind-icon');
-  const txt=document.getElementById('save-ind-text');
-  if(!ind)return;
-  ind.style.opacity='1';
-  if(status==='loading'){
-    if(icon)icon.textContent='☁️';
-    if(txt){txt.textContent='LOADING...';txt.style.color='var(--text3)';}
-  } else if(status==='loaded'){
-    if(icon)icon.textContent='✓';
-    if(txt){txt.textContent=msg||'SYNCED';txt.style.color='var(--green)';}
-    setTimeout(()=>ind.style.opacity='0',3000);
-  } else if(status==='error'){
-    if(icon)icon.textContent='⚠';
-    if(txt){txt.textContent='SYNC ERROR';txt.style.color='var(--red)';}
-    console.error('[SYNC] Error:', msg);
-    toast('⚠️ Sync error — check Supabase SQL setup');
-  } else if(status==='ready'){
-    if(icon)icon.textContent='✓';
-    if(txt){txt.textContent='READY';txt.style.color='var(--green)';}
-    setTimeout(()=>ind.style.opacity='0',2000);
-  }
+  }catch(e){console.log('No existing data, starting fresh');}
 }
 
 async function saveToSupabase(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
-  // Show sync indicator in topbar
-  const ind=document.getElementById('save-indicator');
-  const icon=document.getElementById('save-ind-icon');
-  const txt=document.getElementById('save-ind-text');
-  if(ind){ind.style.opacity='1';if(icon)icon.textContent='☁️';if(txt){txt.textContent='SYNCING...';txt.style.color='var(--text3)';}}
   // Show glowing sync overlay
   const overlay=document.getElementById('cloud-sync-overlay');
   const card=document.getElementById('cloud-sync-card');
@@ -4721,16 +3977,7 @@ async function saveToSupabase(){
       },
       updated_at:new Date().toISOString()
     };
-    const{error:saveErr}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
-    if(saveErr){
-      console.error('[SYNC] Save error:',saveErr.message,saveErr.code);
-      showSyncStatus('error', saveErr.message);
-      if(saveErr.code==='42P01'){toast('⚠️ Table not found — run SQL in Supabase');}
-      else if(saveErr.code==='42501'){toast('⚠️ Permission denied — check RLS policies');}
-      return;
-    }
-    console.log('[SYNC] Saved successfully');
-    showSyncStatus('loaded','SYNCED ✓');
+    await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
     // Show success state
     if(overlay){
       if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
@@ -4792,66 +4039,9 @@ function enterApp(){
   } else {
     // Make sure sidebar shows the right account name
     document.getElementById('ac-name').textContent=S.cur;
-    // Force fresh load from cloud every login
-    loadUserData().then(()=>{
-      rCalendar();
-      setTimeout(()=>showWelcomeQuote(name),1200);
-    });
+    rCalendar();
+    toast('Welcome back, '+name+' ✓');
   }
-}
-function showWelcomeQuote(name){
-  const welcomeQuotes=[
-    {text:'The market is a device for transferring money from the impatient to the patient.',author:'Warren Buffett'},
-    {text:'I believe in analysis and not forecasting.',author:'Nicolas Darvas'},
-    {text:'Do not focus on making money. Focus on protecting what you have.',author:'Paul Tudor Jones'},
-    {text:'The goal of a successful trader is to make the best trades. Money is secondary.',author:'Alexander Elder'},
-    {text:'In this game, the market has to keep pitching, but you don\'t have to swing.',author:'Warren Buffett'},
-    {text:'It\'s not whether you\'re right or wrong, but how much money you make when you\'re right and how much you lose when you\'re wrong.',author:'George Soros'},
-    {text:'The elements of good trading are cutting losses, cutting losses, and cutting losses.',author:'Ed Seykota'},
-    {text:'Throughout my financial career, I have continually witnessed examples of other people that I have known being ruined by a failure to respect risk.',author:'Larry Hite'},
-    {text:'I\'m always thinking about losing money as opposed to making money.',author:'Paul Tudor Jones'},
-    {text:'Win or lose, everybody gets what they want out of the market.',author:'Ed Seykota'},
-    {text:'The key to trading success is emotional discipline. Making money has nothing to do with intelligence.',author:'Victor Sperandeo'},
-    {text:'Risk comes from not knowing what you\'re doing.',author:'Warren Buffett'},
-    {text:'The market can remain irrational longer than you can remain solvent.',author:'John Maynard Keynes'},
-    {text:'You don\'t need to be right about the direction to make money. You need to be right about your risk.',author:'Michael Marcus'},
-    {text:'If you personalize losses, you can\'t trade.',author:'Bruce Kovner'},
-    {text:'The trend is your friend until the end when it bends.',author:'Ed Seykota'},
-    {text:'There is only one side of the market and it is not the bull side or the bear side, but the right side.',author:'Jesse Livermore'},
-    {text:'A loss never bothers me after I take it. I forget it overnight. But being wrong and not taking the loss — that is what does the damage.',author:'Jesse Livermore'},
-    {text:'The difference between winners and losers is simply that winners do what they know they should do, even when they don\'t feel like it.',author:'Mark Douglas'},
-    {text:'Every time you make a trade, you should be able to say that you followed your rules.',author:'Mark Douglas'},
-    {text:'Simplicity is the key to brilliance.',author:'Bruce Lee'},
-    {text:'Price is the only truth in the market. Everything else is an opinion.',author:'ICT · Michael Huddleston'},
-    {text:'Your higher timeframe tells the story. Your lower timeframe is where you find the entry.',author:'ICT · Michael Huddleston'},
-    {text:'The liquidity is the target. Always has been.',author:'ICT · Michael Huddleston'},
-    {text:'Don\'t trade what you think. Trade what you see.',author:'ICT · Michael Huddleston'},
-    {text:'The purpose of a stop loss is not to get stopped out — it\'s to define your risk before you enter.',author:'Tom Hougaard'},
-    {text:'I don\'t try to pick tops or bottoms. I try to find the highest probability moment to join a trend.',author:'Tom Hougaard'},
-    {text:'Amateurs go broke by taking large losses. Professionals go broke by taking small profits.',author:'Tom Hougaard'},
-    {text:'The stock market is filled with individuals who know the price of everything, but the value of nothing.',author:'Philip Fisher'},
-    {text:'The best trades require patience. Impatience is the enemy of the trader.',author:'Steve Burns'},
-  ];
-  const q=welcomeQuotes[Math.floor(Math.random()*welcomeQuotes.length)];
-  const popup=document.getElementById('quote-popup');
-  const qt=document.getElementById('quote-text');
-  const qa=document.getElementById('quote-author');
-  if(!popup||!qt||!qa)return;
-  qt.textContent='"'+q.text+'"';
-  qa.textContent='— '+q.author;
-  // Add welcome header
-  const existing=popup.querySelector('.welcome-header');
-  if(!existing){
-    const hdr=document.createElement('div');
-    hdr.className='welcome-header';
-    hdr.style.cssText='font-family:var(--fd);font-size:18px;color:var(--gold);letter-spacing:.06em;margin-bottom:8px';
-    hdr.textContent='Welcome back, '+name+' ✨';
-    popup.insertBefore(hdr,qt);
-  } else {
-    existing.textContent='Welcome back, '+name+' ✨';
-  }
-  popup.classList.add('show');
-  setTimeout(()=>popup.classList.remove('show'),6000);
 }
 
 async function signOut(){
@@ -4890,23 +4080,6 @@ function initAuth(){
   initSupabase(SUPABASE_URL, SUPABASE_KEY);
 }
 
-
-async function forceSyncNow(){
-  if(!SB||!currentUser||currentUser.id==='demo'){toast('Sign in to sync');return;}
-  toast('Syncing...');
-  await saveToSupabase();
-  await loadUserData();
-  const ap=document.querySelector('.page.active');
-  if(ap){rp(ap.id.replace('page-',''));}
-  toast('Sync complete!');
-}
-
 </script>
-
-<!-- Image preview modal -->
-<div class="img-modal-overlay" id="img-modal-overlay" onclick="closeImgModal()">
-  <img id="img-modal-img" src="">
-</div>
-
 </body>
 </html>
