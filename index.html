@@ -177,7 +177,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
 .u-role{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:.1em}
 
 /* ── MAIN ── */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;transform:translateZ(0);}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;transform:translateZ(0);overscroll-behavior-y:none;}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
   background:rgba(6,8,16,0.96);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -1094,18 +1094,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
   .orb,.btn-gold::after,.status-dot,.cc.today::before{animation:none!important;}
   *{transition-duration:.01ms!important;}
 }
-/* ── OTP BOXES ── */
-.otp-box{
-  width:44px;height:52px;text-align:center;font-size:22px;font-weight:700;
-  font-family:var(--fd);letter-spacing:.05em;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:10px;color:var(--text);
-  outline:none;caret-color:var(--gold);
-  transition:border-color .15s,box-shadow .15s;
-}
-.otp-box:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.2),0 0 16px rgba(201,168,76,0.1);}
-.otp-box.filled{border-color:rgba(201,168,76,0.5);color:var(--gold);}
+/* ── CONFIRM EMAIL SCREEN animations ── */
+@keyframes confirmPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.12);opacity:1}}
+@keyframes confirmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
 </style>
 </head>
@@ -1177,30 +1168,47 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         <button class="auth-btn-main" id="auth-submit-btn" onclick="authSubmit()">Sign In</button>
       </div>
 
-      <!-- STEP 2: OTP verification (signup only) -->
+      <!-- STEP 2: confirm email waiting screen -->
       <div id="auth-step2" style="display:none">
-        <div style="text-align:center;margin-bottom:16px">
-          <div style="font-size:32px;margin-bottom:8px">📧</div>
-          <div style="font-family:var(--fd);font-size:18px;color:var(--gold);letter-spacing:.04em">CHECK YOUR EMAIL</div>
-          <div style="font-family:var(--fm);font-size:10px;color:var(--text3);letter-spacing:.12em;margin-top:6px">WE SENT A 6-DIGIT CODE TO</div>
-          <div id="otp-email-display" style="font-size:13px;color:var(--text);margin-top:4px;font-weight:600"></div>
-        </div>
-        <!-- 6 individual OTP boxes -->
-        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px" id="otp-boxes">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-          <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-        </div>
-        <div class="auth-spinner" id="auth-spinner2"></div>
-        <button class="auth-btn-main" onclick="verifyOTP()">Verify & Create Account</button>
-        <div style="text-align:center;margin-top:12px">
-          <span style="font-size:12px;color:var(--text3)">Didn't get it? </span>
-          <span style="font-size:12px;color:var(--gold);cursor:pointer;text-decoration:underline" onclick="resendOTP()">Resend code</span>
-          <span style="font-size:12px;color:var(--text3)"> · </span>
-          <span style="font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline" onclick="backToSignup()">← Back</span>
+        <div style="text-align:center;padding:8px 0 4px">
+          <!-- Animated envelope -->
+          <div style="position:relative;width:80px;height:80px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:0;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);animation:confirmPulse 2s ease-in-out infinite"></div>
+            <div style="position:absolute;inset:8px;border-radius:50%;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.15);animation:confirmPulse 2s ease-in-out infinite;animation-delay:.3s"></div>
+            <div style="font-size:32px;position:relative;z-index:1;animation:confirmFloat 3s ease-in-out infinite">✉️</div>
+          </div>
+          <div style="font-family:var(--fd);font-size:26px;letter-spacing:.06em;color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.4);margin-bottom:8px">CHECK YOUR INBOX</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.18em;margin-bottom:16px">CONFIRMATION EMAIL SENT TO</div>
+          <div id="confirm-email-display" style="
+            display:inline-block;
+            background:rgba(201,168,76,0.1);
+            border:1px solid rgba(201,168,76,0.25);
+            border-radius:8px;padding:6px 14px;
+            font-size:13px;font-weight:600;color:var(--gold);
+            font-family:var(--fm);letter-spacing:.03em;
+            margin-bottom:20px;
+          "></div>
+          <!-- Steps -->
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;text-align:left;margin-bottom:18px">
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">1</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5">Open the email from <strong style="color:var(--text)">YzenNq Journal</strong></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">2</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5">Click the <strong style="color:var(--text)">Confirm your email</strong> button</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fd)">3</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5">Come back here and <strong style="color:var(--text)">Sign In</strong> with your email & password</div>
+            </div>
+          </div>
+          <!-- Actions -->
+          <button class="auth-btn-main" onclick="backToSignup()" style="background:rgba(255,255,255,0.06);box-shadow:none;border:1px solid rgba(255,255,255,0.12);color:var(--text2);margin-bottom:10px">← Back to Sign In</button>
+          <div style="font-size:11px;color:var(--text3);line-height:1.6">
+            Didn't get it? Check spam or
+            <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="resendConfirm()">resend email</span>
+          </div>
         </div>
       </div>
 
@@ -4351,23 +4359,43 @@ window.addEventListener('beforeunload',()=>{
 window.addEventListener('resize',()=>{if(document.getElementById('page-equity').classList.contains('active'))renderEquity();});
 setTimeout(showDailyQuote,1800);
 
-// ── iOS scroll fix — prevent rubber-band bounce-back ──
+// ── iOS rubber-band / bounce-back fix ──
 (function(){
-  const main=document.querySelector('.main');
-  if(!main)return;
-  let startY=0;
-  main.addEventListener('touchstart',function(e){
-    startY=e.touches[0].clientY;
-  },{passive:true});
-  main.addEventListener('touchmove',function(e){
-    const y=e.touches[0].clientY;
-    const scrollTop=main.scrollTop;
-    const maxScroll=main.scrollHeight-main.clientHeight;
-    // At top trying to scroll up — block
-    if(scrollTop<=0&&y>startY){e.preventDefault();return;}
-    // At bottom trying to scroll down — block
-    if(scrollTop>=maxScroll&&y<startY){e.preventDefault();return;}
-  },{passive:false});
+  // Fix 1: html+body level — prevents the page itself from bouncing
+  document.documentElement.style.cssText+='height:100%;overflow:hidden;position:fixed;width:100%;';
+  document.body.style.cssText+='height:100%;overflow:hidden;position:fixed;width:100%;';
+
+  // Fix 2: for each scrollable container, clamp scroll position on touchmove
+  function fixScroller(el){
+    let lastY=0;
+    el.addEventListener('touchstart',function(e){
+      lastY=e.touches[0].clientY;
+      // Ensure we're never exactly at 0 or max (iOS bounces at exact boundaries)
+      if(el.scrollTop===0)el.scrollTop=1;
+      const maxScroll=el.scrollHeight-el.clientHeight;
+      if(el.scrollTop>=maxScroll)el.scrollTop=maxScroll-1;
+    },{passive:true});
+    el.addEventListener('touchmove',function(e){
+      const y=e.touches[0].clientY;
+      const goingUp=y>lastY;
+      lastY=y;
+      // Block scroll if at boundary and trying to go past it
+      if(goingUp&&el.scrollTop<=0){e.preventDefault();return;}
+      if(!goingUp&&el.scrollTop>=el.scrollHeight-el.clientHeight){e.preventDefault();return;}
+      e.stopPropagation();
+    },{passive:false});
+  }
+
+  // Apply to all scrollable containers after DOM ready
+  function applyFixes(){
+    ['.main','.mb','nav','.sidebar','#ai-messages'].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>{
+        if(el&&!el._iosfixed){el._iosfixed=true;fixScroller(el);}
+      });
+    });
+  }
+  document.addEventListener('DOMContentLoaded',applyFixes);
+  setTimeout(applyFixes,500);
 })();
 
 // ══════════════════════════════════════
@@ -4512,33 +4540,8 @@ function switchTab(tab){
   clearAuthMessages();
 }
 
-// ── OTP state ──
-let _otpEmail='',_otpPass='',_otpName='';
-
-function initOTPBoxes(){
-  const boxes=[...document.querySelectorAll('.otp-box')];
-  boxes.forEach((box,i)=>{
-    box.value='';box.classList.remove('filled');
-    box.addEventListener('input',e=>{
-      const v=e.target.value.replace(/\D/g,'');
-      box.value=v.slice(-1);
-      box.classList.toggle('filled',!!box.value);
-      if(v&&i<5)boxes[i+1].focus();
-    });
-    box.addEventListener('keydown',e=>{
-      if(e.key==='Backspace'&&!box.value&&i>0)boxes[i-1].focus();
-      if(e.key==='Enter')verifyOTP();
-    });
-    box.addEventListener('paste',e=>{
-      e.preventDefault();
-      const pasted=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
-      boxes.forEach((b,j)=>{b.value=pasted[j]||'';b.classList.toggle('filled',!!b.value);});
-      const last=Math.min(pasted.length,6)-1;
-      if(last>=0)boxes[last].focus();
-    });
-  });
-  setTimeout(()=>boxes[0].focus(),100);
-}
+// ── Auth state ──
+let _signupEmail='';
 
 async function authSubmit(){
   if(!SB){showAuthError('Supabase not configured');return;}
@@ -4552,22 +4555,22 @@ async function authSubmit(){
   try{
     if(isSignup){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
-      // Send OTP via Supabase signInWithOtp (email only, no password yet)
-      const{error}=await SB.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:null}});
+      const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
-      // Store for later
-      _otpEmail=email;_otpPass=pass;_otpName=name;
-      // Switch to OTP step
-      document.getElementById('otp-email-display').textContent=email;
+      if(data?.user&&data.user.identities&&data.user.identities.length===0){
+        throw new Error('An account with this email already exists — sign in instead.');
+      }
+      _signupEmail=email;
+      // Show beautiful confirm screen
+      document.getElementById('confirm-email-display').textContent=email;
       document.getElementById('auth-step1').style.display='none';
       document.getElementById('auth-step2').style.display='block';
-      initOTPBoxes();
       clearAuthMessages();
     }else{
       const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
       if(error){
         if(error.message.includes('Invalid login')||error.message.includes('invalid_credentials'))throw new Error('Incorrect email or password.');
-        if(error.message.includes('Email not confirmed'))throw new Error('Please confirm your email first.');
+        if(error.message.includes('Email not confirmed'))throw new Error('Please confirm your email first — check your inbox.');
         throw error;
       }
       if(!data?.user)throw new Error('Login failed. Please try again.');
@@ -4579,45 +4582,19 @@ async function authSubmit(){
   finally{showSpinner(false);}
 }
 
-async function verifyOTP(){
-  const boxes=[...document.querySelectorAll('.otp-box')];
-  const token=boxes.map(b=>b.value).join('');
-  if(token.length!==6){showAuthError('Enter the full 6-digit code');return;}
-  document.getElementById('auth-spinner2').style.display='block';
-  clearAuthMessages();
+async function resendConfirm(){
+  if(!_signupEmail){return;}
   try{
-    // Verify the OTP
-    const{data,error}=await SB.auth.verifyOtp({email:_otpEmail,token,type:'email'});
-    if(error)throw error;
-    // OTP verified — now update their password and name
-    const{error:upErr}=await SB.auth.updateUser({password:_otpPass,data:{full_name:_otpName}});
-    if(upErr)console.warn('Password set error:',upErr.message);
-    currentUser=data.user;
-    await loadUserData();
-    enterApp();
-  }catch(e){
-    showAuthError(e.message.includes('expired')||e.message.includes('invalid')?'Invalid or expired code — try again or resend.':e.message||'Verification failed');
-    boxes.forEach(b=>{b.value='';b.classList.remove('filled');});
-    boxes[0].focus();
-  }finally{
-    document.getElementById('auth-spinner2').style.display='none';
-  }
-}
-
-async function resendOTP(){
-  clearAuthMessages();
-  try{
-    const{error}=await SB.auth.signInWithOtp({email:_otpEmail,options:{shouldCreateUser:true}});
-    if(error)throw error;
-    showAuthSuccess('New code sent — check your inbox.');
-    initOTPBoxes();
-  }catch(e){showAuthError(e.message||'Could not resend');}
+    await SB.auth.resend({type:'signup',email:_signupEmail});
+    showAuthSuccess('Confirmation email resent — check your inbox.');
+  }catch(e){showAuthError('Could not resend — try again in a minute.');}
 }
 
 function backToSignup(){
   document.getElementById('auth-step2').style.display='none';
   document.getElementById('auth-step1').style.display='block';
   clearAuthMessages();
+  switchTab('login');
 }
 
 async function authDemo(){
