@@ -3667,7 +3667,7 @@ const SUPABASE_URL='https://odevhkdsaqombrpinuli.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kZXZoa2RzYXFvbWJycGludWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MjQ3MDgsImV4cCI6MjA4OTUwMDcwOH0.XexvkFqREctui3U-1EwjX6Pz6kPU_QBdzQMHV9BhKrE';
 let SB = null;
 let currentUser = null;
-const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
+var ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 load();
 initAuth();
 document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
@@ -3699,7 +3699,6 @@ setTimeout(showDailyQuote,1800);
 //  SUPABASE AUTH SYSTEM
 // ══════════════════════════════════════
 // (SB, currentUser, ADMIN_EMAIL, SUPABASE_URL, SUPABASE_KEY declared above)
-const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 
 const SQL_SCHEMA = `
 -- Run this in your Supabase SQL Editor
