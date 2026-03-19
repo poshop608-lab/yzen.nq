@@ -4468,23 +4468,42 @@ function switchTab(tab){
 }
 
 async function authSubmit(){
-  if(!SB){showAuthError('Please configure Supabase first (tap ⚙️ Settings below)');return;}
-  const email=document.getElementById('auth-email').value.trim();
+  if(!SB){showAuthError('Please configure Supabase first');return;}
+  const email=document.getElementById('auth-email').value.trim().toLowerCase();
   const pass=document.getElementById('auth-pass').value;
   const isSignup=document.getElementById('tab-signup').classList.contains('active');
+
+  // Basic validation
   if(!email||!pass){showAuthError('Email and password required');return;}
-  if(pass.length<6){showAuthError('Password must be at least 6 characters');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthError('Enter a valid email address');return;}
+  if(pass.length<8){showAuthError('Password must be at least 8 characters');return;}
+
   showSpinner(true);clearAuthMessages();
   try{
     if(isSignup){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
       const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
-      showAuthSuccess('Account created! Check your email to confirm, then sign in.');
+      // If user already exists Supabase returns a fake success — check identities
+      if(data?.user&&data.user.identities&&data.user.identities.length===0){
+        throw new Error('An account with this email already exists. Please sign in.');
+      }
+      showSpinner(false);
+      showAuthSuccess('✅ Check your email and click the confirmation link before signing in.');
       switchTab('login');
     }else{
       const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
-      if(error)throw error;
+      if(error){
+        // Give clear messages instead of Supabase raw errors
+        if(error.message.includes('Invalid login')||error.message.includes('invalid_credentials')){
+          throw new Error('Incorrect email or password.');
+        }
+        if(error.message.includes('Email not confirmed')){
+          throw new Error('Please confirm your email first — check your inbox.');
+        }
+        throw error;
+      }
+      if(!data?.user)throw new Error('Login failed. Please try again.');
       currentUser=data.user;
       await loadUserData();
       enterApp();
