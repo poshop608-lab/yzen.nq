@@ -3662,8 +3662,14 @@ function renderReport(){
 }
 
 // ══════ INIT ══════
+// ── All auth variables declared before initAuth is called ──
+const SUPABASE_URL='https://odevhkdsaqombrpinuli.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kZXZoa2RzYXFvbWJycGludWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MjQ3MDgsImV4cCI6MjA4OTUwMDcwOH0.XexvkFqREctui3U-1EwjX6Pz6kPU_QBdzQMHV9BhKrE';
+let SB = null;
+let currentUser = null;
+const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 load();
-initAuth(); // Auth system handles rCalendar() after login
+initAuth();
 document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
 if(!S.feedback)S.feedback=[];
 setInterval(()=>{if(S.checklist.autoClear&&S.checklist.lastClear&&(Date.now()-S.checklist.lastClear)/3600000>=4){S.checklist.items.forEach(i=>i.on=false);S.checklist.lastClear=Date.now();save();}},60000);
@@ -3692,8 +3698,7 @@ setTimeout(showDailyQuote,1800);
 // ══════════════════════════════════════
 //  SUPABASE AUTH SYSTEM
 // ══════════════════════════════════════
-let SB = null; // Supabase client
-let currentUser = null;
+// (SB, currentUser, ADMIN_EMAIL, SUPABASE_URL, SUPABASE_KEY declared above)
 const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 
 const SQL_SCHEMA = `
@@ -3957,8 +3962,6 @@ function save(){
 }
 
 // ── Init Auth on Load ──
-const SUPABASE_URL='https://odevhkdsaqombrpinuli.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kZXZoa2RzYXFvbWJycGludWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MjQ3MDgsImV4cCI6MjA4OTUwMDcwOH0.XexvkFqREctui3U-1EwjX6Pz6kPU_QBdzQMHV9BhKrE';
 
 function initAuth(){
   // Always use hardcoded credentials — skip config screen
