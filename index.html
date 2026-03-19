@@ -8,6 +8,8 @@
 <title>YzenNq Journal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('wOpMg_d3aDy9MmgSM');</script>
 <style>
 :root{
   --bg:#060810;--g1:rgba(255,255,255,0.04);--g2:rgba(255,255,255,0.07);--g3:rgba(255,255,255,0.10);
@@ -1206,6 +1208,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
     <div class="ni" onclick="go('checklist')"><span class="ni-ic">✅</span>Checklist</div>
     <div class="ni" onclick="go('risk')"><span class="ni-ic">⚖️</span>Risk Calculator</div>
     <div class="ni" onclick="go('news')"><span class="ni-ic">📰</span>Economic Calendar</div>
+    <div class="ns">Edge Tools</div>
+    <div class="ni" onclick="go('session')"><span class="ni-ic">⏱</span>Session Dashboard</div>
+    <div class="ni" onclick="go('sniper')"><span class="ni-ic">🎯</span>Sniper Check</div>
+    <div class="ni" onclick="go('patterns')"><span class="ni-ic">⚡</span>Pattern Finder</div>
+    <div class="ni" onclick="go('tilt')"><span class="ni-ic">🧠</span>Tilt Shield</div>
+    <div class="ni" onclick="go('annotate')"><span class="ni-ic">📸</span>Annotator</div>
     <div class="ns">Account</div>
     <div class="ni" onclick="go('deposit')"><span class="ni-ic">💰</span>Deposit / Payout</div>
     <div class="ni" onclick="go('report')"><span class="ni-ic">📅</span>Weekly Report</div>
@@ -3609,16 +3617,37 @@ function selectFBType(type){
     document.getElementById('fb-'+t).classList.toggle('sel',t===type);
   });
 }
-function submitFeedback(){
+async function submitFeedback(){
   const msg=document.getElementById('fb-msg').value.trim();
   if(!msg){toast('⚠ Write a message first');return;}
   const name=document.getElementById('fb-name').value.trim()||'Anonymous';
+  const typeLabels={bug:'🐛 Bug Report',improve:'💡 Improvement',feature:'✨ Feature Request'};
+  const typeLabel=typeLabels[_fbType]||_fbType;
+  const date=new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'});
+
+  // Save locally
   if(!S.feedback)S.feedback=[];
   S.feedback.push({type:_fbType,msg,name,date:new Date().toISOString().split('T')[0]});
   save();
   document.getElementById('fb-msg').value='';
   renderFeedbackHistory();
-  showSuccessBurst('🙏','FEEDBACK SENT','Thank you — we read every message',false);
+
+  // Send via EmailJS
+  try{
+    await emailjs.send('service_4pltmnv','template_z9pa4yo',{
+      type:typeLabel,
+      from_name:name,
+      message:msg,
+      date:date,
+      reply_to:currentUser?.email||'no-email'
+    });
+    showSuccessBurst('📧','FEEDBACK SENT','Delivered to your inbox ✓',false);
+  }catch(e){
+    console.error('EmailJS error:',e);
+    // Still saved locally, just notify
+    showSuccessBurst('🙏','FEEDBACK SAVED','Saved locally (email failed)',false);
+    toast('⚠ Email failed — saved locally');
+  }
 }
 function renderFeedbackHistory(){
   const list=document.getElementById('fb-hist-list');
