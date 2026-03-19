@@ -756,7 +756,58 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .page.active{animation:pageIn .25s ease forwards}
 
-/* ── WEEKLY REPORT CARD CSS ── */
+/* ── TICKER PILLS ── */
+.ticker-pill{
+  border:1px solid var(--bdr);border-radius:var(--r);padding:10px 8px;
+  text-align:center;cursor:pointer;transition:all .18s;background:var(--g1);
+  position:relative;overflow:hidden;
+}
+.ticker-pill::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.08),transparent);opacity:0;transition:opacity .18s;border-radius:inherit;}
+.ticker-pill:hover{border-color:var(--gold);transform:translateY(-1px);}
+.ticker-pill:hover::before{opacity:1;}
+.ticker-pill.active{
+  background:var(--gold-dim);border-color:var(--gold);
+  box-shadow:0 0 16px var(--gold-dim),inset 0 0 12px rgba(201,168,76,0.06);
+  transform:translateY(-1px);
+}
+.ticker-pill.active::before{opacity:1;}
+.ticker-pill-name{font-family:var(--fd);font-size:18px;letter-spacing:.04em;color:var(--text);line-height:1;margin-bottom:3px;transition:color .18s;}
+.ticker-pill.active .ticker-pill-name{color:var(--gold);text-shadow:0 0 10px var(--gold-glow);}
+.ticker-pill-sub{font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.08em;}
+.ticker-pill.active .ticker-pill-sub{color:var(--gold2);}
+
+/* ── SESSION PILLS ── */
+.sess-pill{
+  padding:5px 10px;border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--g1);color:var(--text3);font-size:10px;font-family:var(--fm);
+  cursor:pointer;transition:all .15s;letter-spacing:.06em;
+}
+.sess-pill:hover{border-color:var(--blue);color:var(--blue);}
+.sess-pill.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue);box-shadow:0 0 10px var(--blue-dim);}
+
+/* ── OUTCOME PILLS ── */
+.outcome-pill{
+  padding:8px 4px;border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--g1);color:var(--text3);font-size:11px;font-family:var(--fm);
+  cursor:pointer;transition:all .15s;text-align:center;font-weight:600;
+}
+.outcome-pill:hover{transform:translateY(-1px);}
+.outcome-pill.win.active{background:var(--green-dim);border-color:var(--green);color:var(--green);box-shadow:0 0 12px var(--green-glow);}
+.outcome-pill.loss.active{background:var(--red-dim);border-color:var(--red);color:var(--red);box-shadow:0 0 12px var(--red-glow);}
+.outcome-pill.be.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue);box-shadow:0 0 10px var(--blue-dim);}
+
+/* ── GRADE PILLS ── */
+.grade-pill{
+  padding:8px 4px;border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--g1);color:var(--text3);font-size:14px;font-family:var(--fd);
+  cursor:pointer;transition:all .15s;text-align:center;
+}
+.grade-pill:hover{border-color:var(--gold);color:var(--gold);}
+.grade-pill.active[data-val="A"]{background:rgba(34,211,160,.12);border-color:var(--green);color:var(--green);box-shadow:0 0 12px rgba(34,211,160,.2);}
+.grade-pill.active[data-val="B"]{background:var(--blue-dim);border-color:var(--blue);color:var(--blue);box-shadow:0 0 12px var(--blue-dim);}
+.grade-pill.active[data-val="C"]{background:rgba(234,179,8,.1);border-color:#eab308;color:#eab308;}
+.grade-pill.active[data-val="D"]{background:var(--orange-dim);border-color:var(--orange);color:var(--orange);}
+.grade-pill.active[data-val="F"]{background:var(--red-dim);border-color:var(--red);color:var(--red);box-shadow:0 0 12px var(--red-dim);}
 .rc-grade{
   width:80px;height:80px;border-radius:16px;
   display:flex;align-items:center;justify-content:center;
@@ -1732,41 +1783,113 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <div class="fg"><label>Title</label><input id="t-title" placeholder="e.g. MNQ Long — NY AM Judas"></div>
       <div class="fg"><label>Date</label><input type="date" id="t-date"></div>
     </div>
-    <div class="fsec">
-      <div class="fsec-title mb3">📊 Trade Details</div>
-      <div class="form-grid3 mb3">
-        <div class="fg"><label>Ticker</label><input id="t-tk" value="MNQ"></div>
-        <div class="fg"><label>P&L ($)</label><input type="number" id="t-pnl" placeholder="0.00" step=".01"></div>
-        <div class="fg"><label>R:R Achieved</label><input type="number" id="t-rr" placeholder="2.5" step=".1"></div>
+
+    <!-- ══ TRADE DETAILS ══ -->
+    <div class="fsec" style="background:linear-gradient(135deg,rgba(201,168,76,0.04),rgba(96,165,250,0.02));border-color:rgba(201,168,76,0.12);">
+      <div class="fsec-title mb3" style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700">
+        <span style="width:28px;height:28px;background:linear-gradient(135deg,var(--gold2),var(--gold));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 12px var(--gold-glow)">📊</span>
+        Trade Details
       </div>
-      <div class="form-grid3 mb3">
-        <div class="fg"><label>Entry Time</label><input type="time" id="t-et" oninput="calcDur()"></div>
-        <div class="fg"><label>Exit Time</label><input type="time" id="t-xt" oninput="calcDur()"></div>
-        <div class="fg"><label>Duration</label><input id="t-dur" placeholder="Auto" readonly></div>
+
+      <!-- TICKER PICKER -->
+      <div class="fg mb4">
+        <label>Instrument</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px" id="ticker-pills">
+          <div class="ticker-pill active" data-val="NQ!" onclick="selectTicker(this)">
+            <div class="ticker-pill-name">NQ!</div>
+            <div class="ticker-pill-sub">Full NQ · $20/tick</div>
+          </div>
+          <div class="ticker-pill" data-val="MNQ!" onclick="selectTicker(this)">
+            <div class="ticker-pill-name">MNQ!</div>
+            <div class="ticker-pill-sub">Micro NQ · $2/tick</div>
+          </div>
+          <div class="ticker-pill" data-val="ES!" onclick="selectTicker(this)">
+            <div class="ticker-pill-name">ES!</div>
+            <div class="ticker-pill-sub">Full ES · $12.5/tick</div>
+          </div>
+          <div class="ticker-pill" data-val="MES!" onclick="selectTicker(this)">
+            <div class="ticker-pill-name">MES!</div>
+            <div class="ticker-pill-sub">Micro ES · $1.25/tick</div>
+          </div>
+        </div>
+        <input type="hidden" id="t-tk" value="NQ!">
       </div>
-      <div class="form-grid mb3">
-        <div class="fg"><label>Session</label>
-          <select id="t-sess"><option>NY-AM</option><option>NY-Lch</option><option>NY-PM</option><option>London</option><option>Asia</option><option>pre-market</option></select>
+
+      <!-- P&L + R:R row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="fg">
+          <label>P&L ($)</label>
+          <div style="position:relative;margin-top:4px">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm);font-size:13px;pointer-events:none">$</span>
+            <input type="number" id="t-pnl" placeholder="0.00" step=".01" style="padding-left:26px" oninput="updatePnlColor(this)">
+          </div>
         </div>
-        <div class="fg"><label>Outcome</label>
-          <select id="t-out"><option value="win">Win ✓</option><option value="loss">Loss ✗</option><option value="be">Break Even</option></select>
+        <div class="fg">
+          <label>R:R Achieved</label>
+          <div style="position:relative;margin-top:4px">
+            <input type="number" id="t-rr" placeholder="2.5" step=".1">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm);font-size:10px;pointer-events:none">R</span>
+          </div>
         </div>
       </div>
-      <div class="form-grid mb3">
-        <div class="fg"><label>Trade Grade</label>
-          <select id="t-grade">
-            <option value="A">A — Perfect execution</option>
-            <option value="B">B — Good trade</option>
-            <option value="C">C — Okay execution</option>
-            <option value="D">D — Poor trade</option>
-            <option value="F">F — Rule violation</option>
-          </select>
+
+      <!-- Time row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="fg"><label>Entry Time</label><input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px"></div>
+        <div class="fg"><label>Exit Time</label><input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px"></div>
+        <div class="fg">
+          <label>Duration</label>
+          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 11px;font-family:var(--fm);font-size:11px;color:var(--text3);min-height:37px;display:flex;align-items:center">—</div>
+          <input type="hidden" id="t-dur">
         </div>
-        <div class="fg"><label>Mistake Tag</label>
-          <select id="t-mistake">
-            <option value="">None</option><option>FOMO Entry</option><option>Moved Stop</option>
-            <option>Oversized</option><option>Revenge Trade</option><option>Late Entry</option>
-            <option>No Setup</option><option>Ignored Rules</option><option>Early Exit</option>
+      </div>
+
+      <!-- Session + Outcome -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="fg">
+          <label>Session</label>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px" id="session-pills">
+            <div class="sess-pill active" data-val="NY-AM" onclick="selectSession(this)">NY-AM</div>
+            <div class="sess-pill" data-val="NY-Lch" onclick="selectSession(this)">NY-Lch</div>
+            <div class="sess-pill" data-val="NY-PM" onclick="selectSession(this)">NY-PM</div>
+            <div class="sess-pill" data-val="London" onclick="selectSession(this)">London</div>
+            <div class="sess-pill" data-val="Asia" onclick="selectSession(this)">Asia</div>
+            <div class="sess-pill" data-val="pre-market" onclick="selectSession(this)">Pre-Mkt</div>
+          </div>
+          <input type="hidden" id="t-sess" value="NY-AM">
+        </div>
+        <div class="fg">
+          <label>Outcome</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:6px">
+            <div class="outcome-pill win active" data-val="win" onclick="selectOutcome(this)">✓ Win</div>
+            <div class="outcome-pill loss" data-val="loss" onclick="selectOutcome(this)">✗ Loss</div>
+            <div class="outcome-pill be" data-val="be" onclick="selectOutcome(this)">⟳ BE</div>
+          </div>
+          <input type="hidden" id="t-out" value="win">
+        </div>
+      </div>
+
+      <!-- Grade + Mistake -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg">
+          <label>Trade Grade</label>
+          <div style="display:flex;gap:5px;margin-top:6px" id="grade-pills">
+            <div class="grade-pill" data-val="A" onclick="selectGrade(this)" style="flex:1">A</div>
+            <div class="grade-pill" data-val="B" onclick="selectGrade(this)" style="flex:1">B</div>
+            <div class="grade-pill" data-val="C" onclick="selectGrade(this)" style="flex:1">C</div>
+            <div class="grade-pill" data-val="D" onclick="selectGrade(this)" style="flex:1">D</div>
+            <div class="grade-pill" data-val="F" onclick="selectGrade(this)" style="flex:1">F</div>
+          </div>
+          <input type="hidden" id="t-grade" value="A">
+        </div>
+        <div class="fg">
+          <label>Mistake Tag</label>
+          <select id="t-mistake" style="margin-top:4px">
+            <option value="">None ✓</option>
+            <option>FOMO Entry</option><option>Moved Stop</option>
+            <option>Oversized</option><option>Revenge Trade</option>
+            <option>Late Entry</option><option>No Setup</option>
+            <option>Ignored Rules</option><option>Early Exit</option>
           </select>
         </div>
       </div>
@@ -1803,21 +1926,45 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
     </div>
     <div class="fsec">
       <div class="fsec-hdr" onclick="toggleSec('psy-b','pa')">
-        <div class="fsec-title">🧠 Psychology</div><span id="pa">▲</span>
+        <div class="fsec-title">🧠 Psychology & Technicals</div><span id="pa">▲</span>
       </div>
       <div id="psy-b">
-        <div class="form-grid mb3">
-          <div class="fg">
-            <label>Pre-Trade Mental Rating (1-10)</label>
-            <div class="flex gap2 mt3" id="pr-dots" style="flex-wrap:wrap"></div>
+        <!-- Mental Rating -->
+        <div class="fg mb4">
+          <label style="margin-bottom:8px;display:block">Pre-Trade Mental Rating</label>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">MENTAL STATE</span>
+              <span id="pr-label" style="font-family:var(--fd);font-size:18px;color:var(--green);text-shadow:0 0 10px var(--green-glow)">7</span>
+            </div>
+            <div style="display:flex;gap:5px;justify-content:space-between" id="pr-dots"></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--fm);font-size:8px;color:var(--text3)">
+              <span>Tilted</span><span>Neutral</span><span>Optimal</span>
+            </div>
           </div>
-          <div class="fg"><label>Emotion During Trade</label>
-            <select id="t-emotion">
-              <option value="">—</option><option>Calm & Patient</option><option>Confident</option><option>Fearful</option>
-              <option>FOMO</option><option>Greedy</option><option>Anxious</option><option>Revenge Mode</option>
-              <option>Bored</option><option>Overconfident</option><option>Disciplined</option>
-            </select>
+        </div>
+        <!-- Technical Rating -->
+        <div class="fg mb4">
+          <label style="margin-bottom:8px;display:block">Technical Confluence Rating</label>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">SETUP QUALITY</span>
+              <span id="tr-label" style="font-family:var(--fd);font-size:18px;color:var(--gold);text-shadow:0 0 10px var(--gold-glow)">5</span>
+            </div>
+            <div style="display:flex;gap:5px;justify-content:space-between" id="tr-dots"></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--fm);font-size:8px;color:var(--text3)">
+              <span>Weak</span><span>Decent</span><span>A+ Setup</span>
+            </div>
           </div>
+        </div>
+        <!-- Emotion -->
+        <div class="fg">
+          <label>Emotion During Trade</label>
+          <select id="t-emotion" style="margin-top:4px">
+            <option value="">—</option><option>Calm & Patient</option><option>Confident</option><option>Fearful</option>
+            <option>FOMO</option><option>Greedy</option><option>Anxious</option><option>Revenge Mode</option>
+            <option>Bored</option><option>Overconfident</option><option>Disciplined</option>
+          </select>
         </div>
       </div>
     </div>
@@ -1954,7 +2101,7 @@ let S={
   filterPresets:[],
   cal:{y:new Date().getFullYear(),m:new Date().getMonth()},
   sumTime:'all',anTime:'all',eqTime:'all',
-  psychRating:7,envState:{},tradeImages:[]
+  psychRating:7,techRating:5,envState:{},tradeImages:[]
 };
 
 function save(){
@@ -2227,23 +2374,124 @@ function calMove(d){S.cal.m+=d;if(S.cal.m>11){S.cal.m=0;S.cal.y++;}if(S.cal.m<0)
 // ══════ TRADE FORM ══════
 S.tradeImages=[];
 function openTradeForm(ds=''){
-  S.tradeImages=[];S.envState={};S.psychRating=7;
+  S.tradeImages=[];S.envState={};S.psychRating=7;S.techRating=5;
   document.getElementById('t-date').value=ds||new Date().toISOString().split('T')[0];
-  ['t-title','t-tk','t-pnl','t-rr','t-notes','t-lesson','t-pd','t-tgt','t-ep','t-sp'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value=id==='t-tk'?'MNQ':'';
+  ['t-title','t-pnl','t-rr','t-notes','t-lesson','t-pd','t-tgt','t-ep','t-sp'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.value='';el.style.color='';el.style.borderColor='';}
   });
-  document.getElementById('t-et').value='';document.getElementById('t-xt').value='';document.getElementById('t-dur').value='';
-  document.getElementById('t-out').value='win';document.getElementById('t-grade').value='A';
-  document.getElementById('t-mistake').value='';document.getElementById('t-bias').value='';
-  document.getElementById('t-style').value='';document.getElementById('t-emotion').value='';
+  document.getElementById('t-et').value='';
+  document.getElementById('t-xt').value='';
+  document.getElementById('t-dur').value='';
+  const durDisp=document.getElementById('t-dur-display');if(durDisp)durDisp.textContent='—';
+  document.getElementById('t-mistake').value='';
+  document.getElementById('t-bias').value='';
+  document.getElementById('t-style').value='';
+  document.getElementById('t-emotion').value='';
   document.getElementById('img-prev').innerHTML='';
-  buildPR();buildEnvForm();openM('tmodal');
+  // Reset ticker pills → default NQ!
+  document.querySelectorAll('#ticker-pills .ticker-pill').forEach(p=>p.classList.remove('active'));
+  const defTicker=document.querySelector('#ticker-pills [data-val="NQ!"]');
+  if(defTicker)defTicker.classList.add('active');
+  document.getElementById('t-tk').value='NQ!';
+  // Reset session pills → default NY-AM
+  document.querySelectorAll('#session-pills .sess-pill').forEach(p=>p.classList.remove('active'));
+  const defSess=document.querySelector('#session-pills [data-val="NY-AM"]');
+  if(defSess)defSess.classList.add('active');
+  document.getElementById('t-sess').value='NY-AM';
+  // Reset outcome pills → default win
+  document.querySelectorAll('.outcome-pill').forEach(p=>p.classList.remove('active'));
+  const defOut=document.querySelector('.outcome-pill.win');
+  if(defOut)defOut.classList.add('active');
+  document.getElementById('t-out').value='win';
+  // Reset grade pills → default A
+  document.querySelectorAll('#grade-pills .grade-pill').forEach(p=>p.classList.remove('active'));
+  const defGrade=document.querySelector('#grade-pills [data-val="A"]');
+  if(defGrade)defGrade.classList.add('active');
+  document.getElementById('t-grade').value='A';
+  buildPR();buildTR();buildEnvForm();openM('tmodal');
 }
 function buildPR(){
-  document.getElementById('pr-dots').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>
-    `<div class="pr-dot${n===S.psychRating?' active':''}" onclick="setPR(${n})">${n}</div>`).join('');
+  const dots=document.getElementById('pr-dots');
+  const lbl=document.getElementById('pr-label');
+  if(!dots)return;
+  const colors=['var(--red)','var(--red)','var(--orange)','var(--orange)','#eab308','#eab308','var(--green)','var(--green)','var(--green)','var(--green)'];
+  const glows=['var(--red-glow)','var(--red-glow)','rgba(251,146,60,.4)','rgba(251,146,60,.4)','rgba(234,179,8,.4)','rgba(234,179,8,.4)','var(--green-glow)','var(--green-glow)','var(--green-glow)','var(--green-glow)'];
+  dots.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`
+    <div onclick="setPR(${n})" style="
+      flex:1;height:32px;border-radius:6px;cursor:pointer;
+      background:${n<=S.psychRating?colors[n-1]:'var(--g2)'};
+      border:1px solid ${n<=S.psychRating?colors[n-1]:'var(--bdr)'};
+      box-shadow:${n<=S.psychRating?'0 0 8px '+glows[n-1]:'none'};
+      transition:all .15s;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fm);font-size:9px;
+      color:${n<=S.psychRating?'rgba(255,255,255,0.9)':'var(--text3)'};
+    ">${n}</div>`).join('');
+  if(lbl){
+    const r=S.psychRating;
+    lbl.textContent=r+'/10';
+    lbl.style.color=r>=7?'var(--green)':r>=5?'#eab308':'var(--red)';
+    lbl.style.textShadow=r>=7?'0 0 10px var(--green-glow)':r>=5?'0 0 10px rgba(234,179,8,.4)':'0 0 10px var(--red-glow)';
+  }
 }
-function setPR(n){S.psychRating=n;document.querySelectorAll('.pr-dot').forEach((d,i)=>d.classList.toggle('active',i+1===n));}
+function setPR(n){
+  S.psychRating=n;
+  buildPR();
+}
+
+function buildTR(){
+  const dots=document.getElementById('tr-dots');
+  const lbl=document.getElementById('tr-label');
+  if(!dots)return;
+  const colors=['var(--red)','var(--red)','var(--orange)','var(--orange)','#eab308','var(--gold)','var(--gold)','var(--gold)','var(--green)','var(--green)'];
+  const glows=['var(--red-glow)','var(--red-glow)','rgba(251,146,60,.4)','rgba(251,146,60,.4)','rgba(234,179,8,.4)','var(--gold-glow)','var(--gold-glow)','var(--gold-glow)','var(--green-glow)','var(--green-glow)'];
+  dots.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`
+    <div onclick="setTR(${n})" style="
+      flex:1;height:32px;border-radius:6px;cursor:pointer;
+      background:${n<=S.techRating?colors[n-1]:'var(--g2)'};
+      border:1px solid ${n<=S.techRating?colors[n-1]:'var(--bdr)'};
+      box-shadow:${n<=S.techRating?'0 0 8px '+glows[n-1]:'none'};
+      transition:all .15s;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fm);font-size:9px;
+      color:${n<=S.techRating?'rgba(255,255,255,0.9)':'var(--text3)'};
+    ">${n}</div>`).join('');
+  if(lbl){
+    const r=S.techRating;
+    const label=r>=9?'A+ Setup':r>=7?'Strong':r>=5?'Decent':r>=3?'Weak':'Poor';
+    lbl.textContent=r+'/10';
+    lbl.style.color=r>=7?'var(--gold)':r>=5?'#eab308':'var(--red)';
+    lbl.style.textShadow=r>=7?'0 0 10px var(--gold-glow)':r>=5?'0 0 10px rgba(234,179,8,.4)':'0 0 10px var(--red-glow)';
+  }
+}
+function setTR(n){
+  S.techRating=n;
+  buildTR();
+}
+
+function selectTicker(el){
+  document.querySelectorAll('#ticker-pills .ticker-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('t-tk').value=el.dataset.val;
+}
+function selectSession(el){
+  document.querySelectorAll('#session-pills .sess-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('t-sess').value=el.dataset.val;
+}
+function selectOutcome(el){
+  document.querySelectorAll('.outcome-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('t-out').value=el.dataset.val;
+}
+function selectGrade(el){
+  document.querySelectorAll('#grade-pills .grade-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('t-grade').value=el.dataset.val;
+}
+function updatePnlColor(inp){
+  const v=parseFloat(inp.value)||0;
+  inp.style.color=v>0?'var(--green)':v<0?'var(--red)':'var(--text)';
+  inp.style.borderColor=v>0?'rgba(34,211,160,.4)':v<0?'rgba(248,113,113,.4)':'var(--bdr)';
+}
 function buildEnvForm(){
   document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>`
     <div class="yna-wrap">
@@ -2264,7 +2512,14 @@ function setYNA(fi,val){
 function toggleSec(id,aid){const el=document.getElementById(id);const h=el.style.display==='none';el.style.display=h?'':'none';const a=document.getElementById(aid);if(a)a.textContent=h?'▲':'▼';}
 function calcDur(){
   const et=document.getElementById('t-et').value,xt=document.getElementById('t-xt').value;
-  if(et&&xt){const[eh,em]=et.split(':').map(Number);const[xh,xm]=xt.split(':').map(Number);let min=(xh*60+xm)-(eh*60+em);if(min<0)min+=1440;document.getElementById('t-dur').value=min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`;}
+  if(et&&xt){
+    const[eh,em]=et.split(':').map(Number);const[xh,xm]=xt.split(':').map(Number);
+    let min=(xh*60+xm)-(eh*60+em);if(min<0)min+=1440;
+    const dur=min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`;
+    document.getElementById('t-dur').value=dur;
+    const disp=document.getElementById('t-dur-display');
+    if(disp){disp.textContent=dur;disp.style.color='var(--text2)';}
+  }
 }
 function handleImgs(inp){
   const p=document.getElementById('img-prev');
@@ -2294,6 +2549,7 @@ function saveTrade(){
     entryPrice:document.getElementById('t-ep').value,
     stopPrice:document.getElementById('t-sp').value,
     psychRating:S.psychRating,
+    techRating:S.techRating,
     emotion:document.getElementById('t-emotion').value,
     env:{...S.envState},
     notes:document.getElementById('t-notes').value,
