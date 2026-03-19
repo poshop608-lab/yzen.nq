@@ -1117,7 +1117,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <span class="tb-title" id="tb-title">Calendar</span>
     </div>
     <div class="tb-right">
-      <span id="save-indicator" style="font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.1em;opacity:0;transition:opacity .4s;display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);display:inline-block"></span>SAVED</span>
+      <span id="save-indicator" style="opacity:0;transition:opacity .3s;display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.12em">
+        <span id="save-ind-icon" style="font-size:13px">☁️</span>
+        <span id="save-ind-text">SAVED</span>
+      </span>
       <button class="btn btn-glass btn-sm btn-ic" onclick="go('settings')" title="Settings">⚙️</button>
       <button class="btn btn-gold" onclick="openTradeForm()">＋ Log Trade</button>
     </div>
@@ -1872,7 +1875,49 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <div class="toast" id="toast"></div>
 
-<!-- ── CUSTOM CONFIRM MODAL ── -->
+<!-- ── CLOUD SYNC OVERLAY ── -->
+<div id="cloud-sync-overlay" style="display:none;position:fixed;inset:0;z-index:99998;pointer-events:none;align-items:center;justify-content:center;">
+  <div id="cloud-sync-card" style="
+    background:rgba(6,8,16,0.92);
+    border:1px solid rgba(34,211,160,0.3);
+    border-radius:20px;
+    padding:22px 32px;
+    display:flex;align-items:center;gap:14px;
+    box-shadow:0 0 40px rgba(34,211,160,0.15),0 0 80px rgba(34,211,160,0.06),0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter:blur(20px);
+    animation:cloudSyncIn .25s cubic-bezier(.34,1.56,.64,1) forwards;
+    position:relative;overflow:hidden;
+  ">
+    <!-- shimmer sweep -->
+    <div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(34,211,160,0.06) 50%,transparent 60%);animation:cloudShimmer 1.8s ease-in-out infinite;pointer-events:none;border-radius:20px"></div>
+    <!-- icon ring -->
+    <div style="position:relative;width:42px;height:42px;flex-shrink:0">
+      <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(34,211,160,0.15);animation:cloudRingPulse 1.5s ease-in-out infinite"></div>
+      <div style="position:absolute;inset:3px;border-radius:50%;border:2px solid rgba(34,211,160,0.35);border-top-color:var(--green);animation:cloudSpin .8s linear infinite"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px">☁️</div>
+    </div>
+    <div>
+      <div id="cloud-sync-title" style="font-family:var(--fd);font-size:16px;letter-spacing:.06em;color:var(--green);text-shadow:0 0 12px rgba(34,211,160,0.5);line-height:1">SYNCING</div>
+      <div id="cloud-sync-sub" style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.18em;margin-top:3px">SAVING TO CLOUD</div>
+    </div>
+    <!-- dots -->
+    <div style="display:flex;gap:4px;margin-left:4px">
+      <div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:cloudDot 1.2s ease-in-out infinite;opacity:.3"></div>
+      <div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:cloudDot 1.2s ease-in-out .2s infinite;opacity:.3"></div>
+      <div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:cloudDot 1.2s ease-in-out .4s infinite;opacity:.3"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes cloudSyncIn{from{opacity:0;transform:translateY(12px) scale(.93)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes cloudSyncOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.93) translateY(8px)}}
+@keyframes cloudSpin{to{transform:rotate(360deg)}}
+@keyframes cloudRingPulse{0%,100%{transform:scale(1);opacity:.15}50%{transform:scale(1.18);opacity:.4}}
+@keyframes cloudShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+@keyframes cloudDot{0%,80%,100%{opacity:.3;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
+@keyframes cloudDoneIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+</style>
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
   <div style="background:rgba(8,10,20,0.98);border:1px solid var(--bdr2);border-radius:20px;padding:28px 32px;width:320px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.8);animation:authIn .2s ease;text-align:center;">
     <div id="confirm-icon" style="font-size:36px;margin-bottom:10px"></div>
@@ -1918,9 +1963,22 @@ function save(){
     localStorage.setItem('yz4',payload);
     localStorage.setItem('yz4_backup',payload);
     localStorage.setItem('yz4_ts',Date.now().toString());
-    // Flash saved indicator
+    // Flash topbar indicator
     const ind=document.getElementById('save-indicator');
-    if(ind){ind.style.opacity='1';clearTimeout(ind._t);ind._t=setTimeout(()=>ind.style.opacity='0',1800);}
+    if(ind){
+      const icon=document.getElementById('save-ind-icon');
+      const txt=document.getElementById('save-ind-text');
+      if(icon)icon.textContent='☁️';
+      if(txt){txt.textContent='SAVING...';txt.style.color='var(--text3)';}
+      ind.style.opacity='1';
+      clearTimeout(ind._t);
+      ind._t=setTimeout(()=>{
+        if(icon)icon.textContent='✓';
+        if(txt){txt.textContent='SAVED';txt.style.color='var(--green)';}
+        clearTimeout(ind._t2);
+        ind._t2=setTimeout(()=>ind.style.opacity='0',1400);
+      },600);
+    }
   }catch(e){
     try{
       const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
@@ -1928,6 +1986,9 @@ function save(){
       localStorage.setItem('yz4',JSON.stringify(S));
     }catch(e2){}
   }
+  // Debounce Supabase cloud sync
+  clearTimeout(save._sbTimer);
+  save._sbTimer=setTimeout(saveToSupabase,1500);
 }
 function load(){
   try{
@@ -3765,13 +3826,13 @@ async function checkSession(){
     document.getElementById('auth-screen').classList.remove('hidden');
     const{data:{session}}=await SB.auth.getSession();
     if(session){
-      // Session exists — auto-enter immediately, no "Continue as" prompt
+      // Already logged in — skip auth screen completely
       currentUser=session.user;
       await loadUserData();
       enterApp();
       return;
     }
-    // No session — listen for auth changes (handles Google OAuth redirect)
+    // Listen for OAuth redirects and new sign-ins
     SB.auth.onAuthStateChange(async(event,session)=>{
       if(event==='SIGNED_IN'&&session){
         currentUser=session.user;
@@ -3871,6 +3932,17 @@ async function loadUserData(){
 
 async function saveToSupabase(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
+  // Show glowing sync overlay
+  const overlay=document.getElementById('cloud-sync-overlay');
+  const card=document.getElementById('cloud-sync-card');
+  const title=document.getElementById('cloud-sync-title');
+  const sub=document.getElementById('cloud-sync-sub');
+  if(overlay){
+    overlay.style.display='flex';
+    if(card)card.style.animation='cloudSyncIn .25s cubic-bezier(.34,1.56,.64,1) forwards';
+    if(title){title.textContent='SYNCING';title.style.color='var(--green)';title.style.textShadow='0 0 12px rgba(34,211,160,0.5)';}
+    if(sub)sub.textContent='SAVING TO CLOUD';
+  }
   try{
     const payload={
       user_id:currentUser.id,
@@ -3885,7 +3957,31 @@ async function saveToSupabase(){
       updated_at:new Date().toISOString()
     };
     await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
-  }catch(e){console.error('Supabase save error:',e);}
+    // Show success state
+    if(overlay){
+      if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
+      if(sub)sub.textContent='ALL DATA SAVED';
+      if(card){
+        card.style.borderColor='rgba(34,211,160,0.5)';
+        card.style.boxShadow='0 0 50px rgba(34,211,160,0.2),0 0 100px rgba(34,211,160,0.08),0 20px 60px rgba(0,0,0,0.6)';
+      }
+      setTimeout(()=>{
+        if(card)card.style.animation='cloudSyncOut .3s ease forwards';
+        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
+      },900);
+    }
+  }catch(e){
+    console.error('Supabase save error:',e);
+    if(overlay){
+      if(title){title.textContent='SYNC FAILED';title.style.color='var(--red)';title.style.textShadow='0 0 12px rgba(248,113,113,0.5)';}
+      if(sub)sub.textContent='CHECK CONNECTION';
+      if(card){card.style.borderColor='rgba(248,113,113,0.4)';card.style.boxShadow='0 0 40px rgba(248,113,113,0.15),0 20px 60px rgba(0,0,0,0.6)';}
+      setTimeout(()=>{
+        if(card)card.style.animation='cloudSyncOut .3s ease forwards';
+        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
+      },1800);
+    }
+  }
 }
 
 function enterApp(){
@@ -3949,15 +4045,6 @@ function clearAuthMessages(){
 function showSpinner(show){
   document.getElementById('auth-spinner').style.display=show?'block':'none';
   document.getElementById('auth-submit-btn').disabled=show;
-}
-
-// ── Override save() to also save to Supabase ──
-const _origSave = save;
-function save(){
-  _origSave();
-  // Debounce Supabase saves (don't hammer the API)
-  clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase, 1500);
 }
 
 // ── Init Auth on Load ──
