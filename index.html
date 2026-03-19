@@ -1869,12 +1869,61 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <!-- ACCOUNT MODAL -->
 <div class="overlay" id="amodal">
-<div class="modal" style="width:380px">
+<div class="modal" style="width:460px">
   <div class="mh"><div class="mt" id="am-t">Add Account</div><div class="mc" onclick="closeM('amodal')">✕</div></div>
-  <div class="mb" style="position:relative;z-index:600"><div class="fg"><label>Account Name</label><input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..." autofocus style="position:relative;z-index:601"></div></div>
+  <div class="mb" style="position:relative;z-index:600">
+    <!-- Account Name -->
+    <div class="fg mb4">
+      <label>Account Name</label>
+      <input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..." autofocus style="position:relative;z-index:601">
+    </div>
+    <!-- Account Type -->
+    <div class="mb4" id="am-type-wrap">
+      <label style="display:block;margin-bottom:8px">Account Type</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div id="am-type-personal" onclick="selectAcctType('personal')"
+          style="padding:14px;border:1px solid var(--gold);border-radius:var(--r2);background:var(--gold-dim);cursor:pointer;text-align:center;transition:all .2s">
+          <div style="font-size:20px;margin-bottom:4px">💵</div>
+          <div style="font-size:13px;font-weight:600;color:var(--gold)">Personal Cash</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Your own capital</div>
+        </div>
+        <div id="am-type-prop" onclick="selectAcctType('prop')"
+          style="padding:14px;border:1px solid var(--bdr);border-radius:var(--r2);background:var(--g1);cursor:pointer;text-align:center;transition:all .2s">
+          <div style="font-size:20px;margin-bottom:4px">🏢</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2)">Funded / Prop Firm</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">FTMO, Apex, Topstep...</div>
+        </div>
+      </div>
+    </div>
+    <!-- Personal Cash: Initial Balance -->
+    <div class="fg mb4" id="am-balance-wrap">
+      <label>Initial Balance ($)</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm)">$</span>
+        <input type="number" id="am-balance" placeholder="0.00" step="0.01" style="padding-left:24px">
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">Total amount of money in this account</div>
+    </div>
+    <!-- Prop Firm: Max Drawdown -->
+    <div class="fg mb4" id="am-dd-wrap" style="display:none">
+      <label>Max Drawdown Limit ($)</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm)">$</span>
+        <input type="number" id="am-dd" placeholder="2000" style="padding-left:24px">
+      </div>
+      <div style="font-size:10px;color:var(--orange);margin-top:4px;line-height:1.5">
+        ⚠ Enter your Max Loss limit only (e.g. for a $50K account with $2,000 drawdown, enter 2000). This ensures risk math is calculated correctly.
+      </div>
+    </div>
+    <!-- Prop Firm: Firm name -->
+    <div class="fg mb4" id="am-firm-wrap" style="display:none">
+      <label>Prop Firm Name (optional)</label>
+      <input id="am-firm" placeholder="e.g. FTMO, Apex, Topstep, MyFundedFX...">
+    </div>
+  </div>
   <div class="mf">
     <button class="btn btn-glass btn-sm" onclick="closeM('amodal')">Cancel</button>
-    <button class="btn btn-gold" onclick="saveAcct()">Save</button>
+    <button class="btn btn-gold" onclick="saveAcct()">Create Account</button>
   </div>
 </div>
 </div>
@@ -2149,17 +2198,69 @@ function toggleAcct(){
   },50);
 }
 function switchAcct(a){S.cur=a;document.getElementById('ac-name').textContent=a;document.getElementById('ac-drop').classList.remove('open');save();toast('→ '+a);rCalendar();}
-function openAddAcct(){document.getElementById('am-t').textContent='Add Account';document.getElementById('am-n').value='';document.getElementById('amodal').dataset.mode='add';openM('amodal');}
+function openAddAcct(){
+  document.getElementById('am-t').textContent='Add Account';
+  document.getElementById('am-n').value='';
+  document.getElementById('amodal').dataset.mode='add';
+  window._acctType='personal';
+  // Reset to personal cash by default
+  setTimeout(()=>{
+    selectAcctType('personal');
+    const balInp=document.getElementById('am-balance');if(balInp)balInp.value='';
+    const ddInp=document.getElementById('am-dd');if(ddInp)ddInp.value='';
+    const firmInp=document.getElementById('am-firm');if(firmInp)firmInp.value='';
+  },50);
+  openM('amodal');
+}
 function renameAcct(){document.getElementById('am-t').textContent='Rename';document.getElementById('am-n').value=S.cur;document.getElementById('amodal').dataset.mode='rename';openM('amodal');}
+function selectAcctType(type){
+  window._acctType=type;
+  const personal=document.getElementById('am-type-personal');
+  const prop=document.getElementById('am-type-prop');
+  const balWrap=document.getElementById('am-balance-wrap');
+  const ddWrap=document.getElementById('am-dd-wrap');
+  const firmWrap=document.getElementById('am-firm-wrap');
+  if(type==='personal'){
+    personal.style.border='1px solid var(--gold)';personal.style.background='var(--gold-dim)';
+    personal.querySelector('div:nth-child(2)').style.color='var(--gold)';
+    prop.style.border='1px solid var(--bdr)';prop.style.background='var(--g1)';
+    prop.querySelector('div:nth-child(2)').style.color='var(--text2)';
+    balWrap.style.display='block';ddWrap.style.display='none';firmWrap.style.display='none';
+  } else {
+    prop.style.border='1px solid var(--blue)';prop.style.background='var(--blue-dim)';
+    prop.querySelector('div:nth-child(2)').style.color='var(--blue)';
+    personal.style.border='1px solid var(--bdr)';personal.style.background='var(--g1)';
+    personal.querySelector('div:nth-child(2)').style.color='var(--text2)';
+    balWrap.style.display='none';ddWrap.style.display='block';firmWrap.style.display='block';
+  }
+}
 function saveAcct(){
   const n=document.getElementById('am-n').value.trim();if(!n){toast('⚠ Name required');return;}
+  const mode=document.getElementById('amodal').dataset.mode;
   const isFirst=S.accounts.length===0;
-  if(document.getElementById('amodal').dataset.mode==='add'){S.accounts.push(n);S.cur=n;}
-  else{const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;}
+  const acctType=window._acctType||'personal';
+  const balance=parseFloat(document.getElementById('am-balance')?.value)||0;
+  const dd=parseFloat(document.getElementById('am-dd')?.value)||0;
+  const firm=document.getElementById('am-firm')?.value||'';
+  if(mode==='add'){
+    // Store account as object with metadata
+    if(!S.accountMeta)S.accountMeta={};
+    S.accountMeta[n]={type:acctType,balance:acctType==='personal'?balance:0,maxDD:acctType==='prop'?dd:0,firm};
+    S.accounts.push(n);S.cur=n;
+    // Auto-add deposit if balance provided
+    if(acctType==='personal'&&balance>0){
+      if(!S.deposits)S.deposits=[];
+      S.deposits.push({account:n,type:'Deposit',amount:balance,date:new Date().toISOString().split('T')[0],note:'Initial balance'});
+    }
+  } else {
+    const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;
+    if(S.accountMeta&&S.accountMeta[S.cur]){S.accountMeta[n]=S.accountMeta[S.cur];delete S.accountMeta[S.cur];}
+    S.cur=n;
+  }
   document.getElementById('ac-name').textContent=S.cur;
   save();closeM('amodal');
-  if(isFirst){rCalendar();toast('Account created ✓ — start logging trades!');}
-  else{toast('Saved ✓');}
+  if(isFirst){rCalendar();showSuccessBurst('🏦','ACCOUNT CREATED',n,false);toast('Account created ✓');}
+  else{toast('Account saved ✓');}
 }
 async function delAcct(){
   if(S.accounts.length===1){toast('⚠ Cannot delete last account');return;}
@@ -3113,16 +3214,26 @@ function showSuccessBurst(icon,title,sub,doConfetti){
 
 // ══════ DAILY QUOTE ══════
 const QUOTES=[
-  {text:"The market rewards patience and punishes impulsiveness.",author:"— Trading Proverb"},
-  {text:"Your job is not to predict the future, but to react correctly to the present.",author:"— ICT"},
-  {text:"Discipline is doing what you hate to do but doing it like you love it.",author:"— Mike Tyson"},
-  {text:"The goal is not to be right. The goal is to make money.",author:"— Marty Schwartz"},
-  {text:"Risk comes from not knowing what you're doing.",author:"— Warren Buffett"},
-  {text:"The best traders have no ego. You have to swallow your pride and get out of losses.",author:"— Tom Baldwin"},
-  {text:"Plan the trade, trade the plan.",author:"— Trading Proverb"},
-  {text:"Opportunities are made up easier than losses.",author:"— Trading Proverb"},
-  {text:"Don't focus on making money; focus on protecting what you have.",author:"— Paul Tudor Jones"},
-  {text:"Process over outcome. Every single day.",author:"— YzenNq"},
+  {text:'The market is a device for transferring money from the impatient to the patient.',author:'Warren Buffett'},
+  {text:'Do not focus on making money. Focus on protecting what you have.',author:'Paul Tudor Jones'},
+  {text:"It's not whether you're right or wrong, but how much you make when right and lose when wrong.",author:'George Soros'},
+  {text:'The elements of good trading are: cutting losses, cutting losses, and cutting losses.',author:'Ed Seykota'},
+  {text:"I'm always thinking about losing money as opposed to making money.",author:'Paul Tudor Jones'},
+  {text:'Win or lose, everybody gets what they want out of the market.',author:'Ed Seykota'},
+  {text:'The key to trading success is emotional discipline.',author:'Victor Sperandeo'},
+  {text:'Risk comes from not knowing what you are doing.',author:'Warren Buffett'},
+  {text:'If you personalize losses, you cannot trade.',author:'Bruce Kovner'},
+  {text:'A loss never bothers me after I take it. Being wrong and not taking the loss — that does the damage.',author:'Jesse Livermore'},
+  {text:'Every time you make a trade, you should be able to say that you followed your rules.',author:'Mark Douglas'},
+  {text:'Price is the only truth in the market. Everything else is an opinion.',author:'ICT · Michael Huddleston'},
+  {text:'Your higher timeframe tells the story. Your lower timeframe is where you find the entry.',author:'ICT · Michael Huddleston'},
+  {text:'The liquidity is the target. Always has been.',author:'ICT · Michael Huddleston'},
+  {text:"Don't trade what you think. Trade what you see.",author:'ICT · Michael Huddleston'},
+  {text:'Amateurs go broke by taking large losses. Professionals go broke by taking small profits.',author:'Tom Hougaard'},
+  {text:'There is only one side of the market — not bull or bear — but the right side.',author:'Jesse Livermore'},
+  {text:"The trend is your friend until the end when it bends.",author:'Ed Seykota'},
+  {text:'The difference between winners and losers is that winners do what they know they should, even when they do not feel like it.',author:'Mark Douglas'},
+  {text:'Simplicity is the key to brilliance.',author:'Bruce Lee'},
 ];
 function showDailyQuote(){
   const today=new Date().toISOString().split('T')[0];
@@ -4213,15 +4324,35 @@ function enterApp(){
 function showWelcomeQuote(name){
   const welcomeQuotes=[
     {text:'The market is a device for transferring money from the impatient to the patient.',author:'Warren Buffett'},
+    {text:'I believe in analysis and not forecasting.',author:'Nicolas Darvas'},
     {text:'Do not focus on making money. Focus on protecting what you have.',author:'Paul Tudor Jones'},
     {text:'The goal of a successful trader is to make the best trades. Money is secondary.',author:'Alexander Elder'},
     {text:'In this game, the market has to keep pitching, but you don\'t have to swing.',author:'Warren Buffett'},
-    {text:'Every trade teaches you something. The ones that hurt teach you the most.',author:'GWP Mentorship'},
-    {text:'Discipline is doing what you know you need to do even when you don\'t feel like doing it.',author:'YzenNq'},
-    {text:'Your edge is not just the setup. Your edge is your ability to execute it consistently.',author:'GWP Mentorship'},
-    {text:'The best trade you ever make is the one you didn\'t take when the setup wasn\'t there.',author:'ICT'},
-    {text:'Clean the slate. Yesterday\'s loss is not today\'s debt.',author:'YzenNq · GWP'},
-    {text:'You don\'t rise to the level of your goals. You fall to the level of your systems.',author:'James Clear'},
+    {text:'It\'s not whether you\'re right or wrong, but how much money you make when you\'re right and how much you lose when you\'re wrong.',author:'George Soros'},
+    {text:'The elements of good trading are cutting losses, cutting losses, and cutting losses.',author:'Ed Seykota'},
+    {text:'Throughout my financial career, I have continually witnessed examples of other people that I have known being ruined by a failure to respect risk.',author:'Larry Hite'},
+    {text:'I\'m always thinking about losing money as opposed to making money.',author:'Paul Tudor Jones'},
+    {text:'Win or lose, everybody gets what they want out of the market.',author:'Ed Seykota'},
+    {text:'The key to trading success is emotional discipline. Making money has nothing to do with intelligence.',author:'Victor Sperandeo'},
+    {text:'Risk comes from not knowing what you\'re doing.',author:'Warren Buffett'},
+    {text:'The market can remain irrational longer than you can remain solvent.',author:'John Maynard Keynes'},
+    {text:'You don\'t need to be right about the direction to make money. You need to be right about your risk.',author:'Michael Marcus'},
+    {text:'If you personalize losses, you can\'t trade.',author:'Bruce Kovner'},
+    {text:'The trend is your friend until the end when it bends.',author:'Ed Seykota'},
+    {text:'There is only one side of the market and it is not the bull side or the bear side, but the right side.',author:'Jesse Livermore'},
+    {text:'A loss never bothers me after I take it. I forget it overnight. But being wrong and not taking the loss — that is what does the damage.',author:'Jesse Livermore'},
+    {text:'The difference between winners and losers is simply that winners do what they know they should do, even when they don\'t feel like it.',author:'Mark Douglas'},
+    {text:'Every time you make a trade, you should be able to say that you followed your rules.',author:'Mark Douglas'},
+    {text:'Simplicity is the key to brilliance.',author:'Bruce Lee'},
+    {text:'Price is the only truth in the market. Everything else is an opinion.',author:'ICT · Michael Huddleston'},
+    {text:'Your higher timeframe tells the story. Your lower timeframe is where you find the entry.',author:'ICT · Michael Huddleston'},
+    {text:'The liquidity is the target. Always has been.',author:'ICT · Michael Huddleston'},
+    {text:'Don\'t trade what you think. Trade what you see.',author:'ICT · Michael Huddleston'},
+    {text:'The purpose of a stop loss is not to get stopped out — it\'s to define your risk before you enter.',author:'Tom Hougaard'},
+    {text:'I don\'t try to pick tops or bottoms. I try to find the highest probability moment to join a trend.',author:'Tom Hougaard'},
+    {text:'Amateurs go broke by taking large losses. Professionals go broke by taking small profits.',author:'Tom Hougaard'},
+    {text:'The stock market is filled with individuals who know the price of everything, but the value of nothing.',author:'Philip Fisher'},
+    {text:'The best trades require patience. Impatience is the enemy of the trader.',author:'Steve Burns'},
   ];
   const q=welcomeQuotes[Math.floor(Math.random()*welcomeQuotes.length)];
   const popup=document.getElementById('quote-popup');
