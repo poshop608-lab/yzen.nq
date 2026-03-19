@@ -41,10 +41,10 @@ body.auth-open{overflow:auto;height:auto;min-height:100vh;display:block;}
 .orb{
   position:fixed;border-radius:50%;pointer-events:none;z-index:0;
   will-change:transform;transform:translateZ(0);
+  filter:blur(70px);
   animation:orbFloat 14s ease-in-out infinite;
+  backface-visibility:hidden;
 }
-/* Use pseudo-element for blur so parent stays on compositor */
-.orb::after{content:'';position:absolute;inset:0;border-radius:50%;filter:blur(70px);background:inherit;}
 .orb1{width:420px;height:420px;background:rgba(201,168,76,0.08);top:-140px;left:-140px;animation-delay:0s}
 .orb2{width:340px;height:340px;background:rgba(96,165,250,0.07);bottom:-90px;right:-90px;animation-delay:-5s}
 .orb3{width:300px;height:300px;background:rgba(34,211,160,0.05);top:35%;right:18%;animation-delay:-9s;animation-duration:18s}
@@ -54,13 +54,15 @@ body.auth-open .orb{display:none}
 /* ── SIDEBAR ── */
 .sidebar{
   width:230px;min-width:230px;
-  background:rgba(6,8,16,0.95);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  background:rgba(6,8,16,0.97);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   border-right:1px solid rgba(255,255,255,0.06);
   display:flex;flex-direction:column;height:100vh;
   position:sticky;top:0;overflow-y:auto;z-index:100;
   contain:layout style;
   box-shadow:4px 0 32px rgba(0,0,0,0.4),inset -1px 0 0 rgba(201,168,76,0.06);
+  will-change:transform;
+  transform:translateZ(0);
 }
 
 .logo-wrap{padding:22px 18px 18px;border-bottom:1px solid var(--bdr)}
@@ -69,18 +71,28 @@ body.auth-open .orb{display:none}
   background:linear-gradient(135deg,var(--gold),#E8C870,var(--gold2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   line-height:1;
-  filter:drop-shadow(0 0 10px rgba(201,168,76,0.55)) drop-shadow(0 0 24px rgba(201,168,76,0.25));
-  animation:logoGlowPulse 4s ease-in-out infinite;
+  filter:drop-shadow(0 0 12px rgba(201,168,76,0.6)) drop-shadow(0 0 28px rgba(201,168,76,0.28));
+  will-change:transform;
 }
+/* Subtle scale pulse instead of filter pulse — GPU composited */
 @keyframes logoGlowPulse{
-  0%,100%{filter:drop-shadow(0 0 8px rgba(201,168,76,0.5)) drop-shadow(0 0 20px rgba(201,168,76,0.2))}
-  50%{filter:drop-shadow(0 0 16px rgba(201,168,76,0.7)) drop-shadow(0 0 36px rgba(201,168,76,0.3))}
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.012)}
 }
 .logo-sub{font-family:var(--fm);font-size:8px;letter-spacing:.25em;color:var(--text3);margin-top:3px;text-transform:uppercase}
 
 /* glow dot */
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green),0 0 24px rgba(34,211,160,0.4);display:inline-block;margin-right:6px;animation:pulse 2s ease infinite}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 12px var(--green),0 0 24px rgba(34,211,160,0.4)}50%{opacity:.6;box-shadow:0 0 5px var(--green),0 0 10px rgba(34,211,160,0.2)}}
+.status-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 10px var(--green),0 0 20px rgba(34,211,160,0.35);
+  display:inline-block;margin-right:6px;
+  animation:dotPulse 2s ease infinite;
+  will-change:opacity,transform;
+}
+@keyframes dotPulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.55;transform:scale(0.85)}
+}
 
 .acct-wrap{padding:10px 14px 12px;border-bottom:1px solid var(--bdr);position:relative}
 .acct-lbl{font-family:var(--fm);font-size:8px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
@@ -162,17 +174,19 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
 .u-role{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:.1em}
 
 /* ── MAIN ── */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;height:100vh;position:relative;z-index:1;overscroll-behavior:none;-webkit-overflow-scrolling:touch;transform:translateZ(0);}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
-  background:rgba(6,8,16,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  background:rgba(6,8,16,0.96);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:50;
   contain:layout style;
+  will-change:transform;
+  transform:translateZ(0);
 }
 .tb-title{font-family:var(--fd);font-size:22px;letter-spacing:.06em;color:var(--text)}
 .tb-right{display:flex;align-items:center;gap:8px}
 
-.page{display:none;padding:22px 24px;min-height:calc(100vh - 49px);animation:pageIn .3s ease;box-sizing:border-box}
+.page{display:none;padding:22px 24px;min-height:calc(100vh - 49px);animation:pageIn .2s ease;box-sizing:border-box;contain:layout style;}
 .page.active{display:block}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
@@ -183,24 +197,31 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   transition:box-shadow .15s,transform .15s,background .15s;
   display:inline-flex;align-items:center;gap:5px;
 }
-/* ── LOG TRADE BUTTON — glowy pulse ── */
+/* ── LOG TRADE BUTTON — glowy pulse (GPU only: opacity+transform) ── */
 .btn-gold{
   background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg);
-  box-shadow:0 0 16px var(--gold-glow),0 0 32px rgba(201,168,76,0.15);
+  box-shadow:0 0 20px var(--gold-glow),0 0 36px rgba(201,168,76,0.18);
+  position:relative;overflow:hidden;
+  will-change:transform;
+}
+.btn-gold::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,0.22),transparent 70%);
+  border-radius:inherit;pointer-events:none;
   animation:goldPulse 3s ease-in-out infinite;
+  will-change:opacity;
 }
 @keyframes goldPulse{
-  0%,100%{box-shadow:0 0 16px var(--gold-glow),0 0 32px rgba(201,168,76,0.15)}
-  50%{box-shadow:0 0 28px rgba(201,168,76,0.7),0 0 50px rgba(201,168,76,0.25),0 0 80px rgba(201,168,76,0.08)}
+  0%,100%{opacity:0.4}
+  50%{opacity:1}
 }
 .btn-gold:hover{
-  box-shadow:0 0 36px rgba(201,168,76,0.9),0 0 60px rgba(201,168,76,0.35)!important;
+  box-shadow:0 0 32px rgba(201,168,76,0.85),0 0 56px rgba(201,168,76,0.3)!important;
   transform:translateY(-1px);
-  animation:none;
 }
 
 /* Trade modal overlay — enhanced entrance */
-#tmodal{background:rgba(0,0,0,.82);backdrop-filter:blur(14px);}
+#tmodal{background:rgba(0,0,0,.80);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
 #tmodal .modal{
   box-shadow:
     0 0 0 1px rgba(201,168,76,0.15),
@@ -244,6 +265,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   border:1px solid var(--bdr);border-radius:var(--r2);padding:18px;
   transition:border-color .2s,box-shadow .2s;position:relative;
   contain:layout style;
+  transform:translateZ(0);
 }
 .card::before{
   content:'';position:absolute;inset:0;
@@ -258,6 +280,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   background:rgba(255,255,255,0.05);border:1px solid var(--bdr);
   border-radius:var(--r2);padding:18px 20px;position:relative;overflow:hidden;
   transition:transform .18s,box-shadow .18s;will-change:transform;
+  transform:translateZ(0);
 }
 .sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0}
 .sc:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.4)}
@@ -312,6 +335,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto}
   min-height:82px;background:var(--g1);border:1px solid var(--bdr);
   border-radius:var(--r);padding:8px;cursor:pointer;
   transition:background .15s,border-color .15s,box-shadow .15s;
+  position:relative;overflow:hidden;
 }
 .cc:hover{background:var(--g2);border-color:var(--bdr2)}
 .cc.today{border-color:var(--gold);box-shadow:0 0 14px var(--gold-dim),inset 0 0 10px var(--gold-dim)}
@@ -756,12 +780,10 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .btn-glass:hover{box-shadow:0 0 16px rgba(255,255,255,0.07),0 0 0 1px rgba(255,255,255,0.12)!important;background:var(--g3)!important}
 .btn-red:hover{box-shadow:0 0 18px var(--red-glow)!important;filter:brightness(1.1)}
 
-/* Cards */
-.card{transition:border-color .2s,box-shadow .2s}
+/* Cards — original hover restored */
 .card:hover{border-color:rgba(201,168,76,0.2)!important;box-shadow:0 6px 30px rgba(0,0,0,.35),0 0 0 1px rgba(201,168,76,0.08),inset 0 1px 0 rgba(255,255,255,0.04)!important}
 
-/* Stat cards with color-matched glow */
-.sc{transition:transform .18s,box-shadow .18s,border-color .18s}
+/* Stat cards — original color glows restored */
 .sc:hover{transform:translateY(-3px)!important}
 .sc.gold:hover{box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 28px var(--gold-glow)!important;border-color:rgba(201,168,76,0.3)!important}
 .sc.green:hover{box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 28px var(--green-glow)!important;border-color:rgba(34,211,160,0.3)!important}
@@ -777,11 +799,12 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .sv.neg{color:var(--red);text-shadow:0 0 20px var(--red-glow),0 0 40px rgba(248,113,113,0.2)}
 .sv.gold{color:var(--gold);text-shadow:0 0 20px var(--gold-glow),0 0 40px rgba(201,168,76,0.2)}
 
-/* Calendar cells */
+/* Calendar cells — GPU layer via translateZ */
 .cc{transition:background .15s,border-color .15s,box-shadow .15s}
 .cc:hover{background:var(--g2)!important;border-color:rgba(201,168,76,0.25)!important;box-shadow:0 0 14px rgba(201,168,76,0.08),inset 0 0 8px rgba(201,168,76,0.04)!important}
-.cc.today{border-color:var(--gold)!important;box-shadow:0 0 20px var(--gold-dim),0 0 40px rgba(201,168,76,0.08),inset 0 0 16px rgba(201,168,76,0.06)!important;animation:todayPulse 3s ease-in-out infinite}
-@keyframes todayPulse{0%,100%{box-shadow:0 0 20px var(--gold-dim),inset 0 0 16px rgba(201,168,76,0.06)}50%{box-shadow:0 0 32px rgba(201,168,76,0.3),inset 0 0 20px rgba(201,168,76,0.1)}}
+.cc.today{border-color:var(--gold)!important;box-shadow:0 0 20px var(--gold-dim),0 0 40px rgba(201,168,76,0.08),inset 0 0 16px rgba(201,168,76,0.06)!important;}
+.cc.today::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(201,168,76,0.1),transparent 70%);animation:todayPulse 3s ease-in-out infinite;pointer-events:none;will-change:opacity;}
+@keyframes todayPulse{0%,100%{opacity:0.5}50%{opacity:1}}
 
 /* Checklist items */
 .cl-item{transition:background .15s,border-color .15s,box-shadow .15s}
@@ -914,10 +937,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 }
 @keyframes authIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes authGlow{
-  0%,100%{box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,0.06),inset 0 1px 0 rgba(255,255,255,0.08),0 0 60px rgba(201,168,76,0.06)}
-  50%{box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,0.06),inset 0 1px 0 rgba(255,255,255,0.08),0 0 100px rgba(201,168,76,0.12),0 0 40px rgba(96,165,250,0.06)}
+  0%,100%{opacity:1}
+  50%{opacity:0.85}
 }
-.auth-box{animation:authIn .5s cubic-bezier(.4,0,.2,1),authGlow 5s ease-in-out 0.5s infinite}
+.auth-box{animation:authIn .5s cubic-bezier(.4,0,.2,1),authGlow 5s ease-in-out 0.5s infinite;will-change:opacity;}
 .auth-logo{
   font-family:var(--fd);font-size:52px;letter-spacing:.1em;
   background:linear-gradient(135deg,var(--gold2),#E8C870,var(--gold),#fff8e0,var(--gold2));
@@ -1050,6 +1073,24 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 .img-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
 .img-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
 .img-modal-overlay img{max-width:92vw;max-height:90vh;border-radius:10px;border:1px solid var(--bdr2);box-shadow:0 0 60px rgba(0,0,0,.8)}
+
+/* ══ PERFORMANCE — GPU layer promotion & paint containment ══ */
+
+/* Promote fixed/sticky elements to own compositor layer */
+.sidebar,.topbar,.main{transform:translateZ(0);backface-visibility:hidden;}
+
+/* Only transition transform & opacity on nav items for smoothness */
+.ni{transition:color .12s,background .12s,text-shadow .12s;}
+.cal-tab,.tf-btn,.ft,.fm-type,.fb-type,.ai-chip,.rc-week-btn{transition:color .12s,background .12s,border-color .12s;}
+
+/* Contain paint on repeated items */
+.cc,.sc,.card,.cl-item,.news-item,.econ-event-row,.ai-msg{contain:layout style;}
+
+/* Reduce motion for users who prefer it */
+@media(prefers-reduced-motion:reduce){
+  .orb,.btn-gold::after,.status-dot,.cc.today::before{animation:none!important;}
+  *{transition-duration:.01ms!important;}
+}
 
 </style>
 </head>
@@ -1238,7 +1279,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
   <div id="page-trades" class="page">
     <div class="flex aic jsb mb4" style="flex-wrap:wrap;gap:8px">
       <div class="flex gap2" style="flex-wrap:wrap">
-        <input type="text" id="s-tr" placeholder="Search trades..." style="width:160px" oninput="renderTrades()">
+        <input type="text" id="s-tr" placeholder="Search trades..." style="width:160px" oninput="debouncedRenderTrades()">
         <select id="f-out" onchange="renderTrades()" style="width:110px">
           <option value="">All Outcomes</option><option value="win">Wins</option><option value="loss">Losses</option><option value="be">Break Even</option>
         </select>
@@ -1293,7 +1334,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         <div class="cal-tab" id="nb-tab-lessons" onclick="switchNBTab('lessons')">🎓 Lessons Learned</div>
       </div>
       <div class="flex gap2">
-        <input type="text" id="note-s" placeholder="Search..." style="width:180px" oninput="renderNotebook()">
+        <input type="text" id="note-s" placeholder="Search..." style="width:180px" oninput="debouncedRenderNotebook()">
         <button class="btn btn-gold btn-sm" onclick="openNoteModal()">＋ New Note</button>
       </div>
     </div>
@@ -2108,13 +2149,44 @@ let S={
   psychRating:7,envState:{},tradeImages:[]
 };
 
+// ══ PERF: debounce helper ══
+function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
+// ══ PERF: requestAnimationFrame scheduler — batch DOM writes ══
+let _rafPending=false,_rafQueue=[];
+function rafRun(fn){
+  _rafQueue.push(fn);
+  if(!_rafPending){
+    _rafPending=true;
+    requestAnimationFrame(()=>{
+      const q=_rafQueue.splice(0);
+      _rafPending=false;
+      q.forEach(f=>f());
+    });
+  }
+}
+// ══ PERF: debounced render functions for search inputs ══
+const debouncedRenderTrades=debounce(()=>renderTrades(),120);
+const debouncedRenderNotebook=debounce(()=>renderNotebook(),120);
+
 function save(){
-  try{
-    const payload=JSON.stringify(S);
-    localStorage.setItem('yz4',payload);
-    localStorage.setItem('yz4_backup',payload);
-    localStorage.setItem('yz4_ts',Date.now().toString());
-    // Flash topbar indicator
+  // ══ PERF: debounce localStorage — don't serialize+write on every single keystroke ══
+  clearTimeout(save._lsTimer);
+  save._lsTimer=setTimeout(()=>{
+    try{
+      const payload=JSON.stringify(S);
+      localStorage.setItem('yz4',payload);
+      localStorage.setItem('yz4_backup',payload);
+      localStorage.setItem('yz4_ts',Date.now().toString());
+    }catch(e){
+      try{
+        const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
+        keys.forEach(k=>localStorage.removeItem(k));
+        localStorage.setItem('yz4',JSON.stringify(S));
+      }catch(e2){}
+    }
+  },300);
+  // Flash topbar indicator
+  rafRun(()=>{
     const ind=document.getElementById('save-indicator');
     if(ind){
       const icon=document.getElementById('save-ind-icon');
@@ -2130,16 +2202,10 @@ function save(){
         ind._t2=setTimeout(()=>ind.style.opacity='0',1400);
       },600);
     }
-  }catch(e){
-    try{
-      const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
-      keys.forEach(k=>localStorage.removeItem(k));
-      localStorage.setItem('yz4',JSON.stringify(S));
-    }catch(e2){}
-  }
-  // Debounce Supabase cloud sync
+  });
+  // Debounce Supabase cloud sync — longer delay to batch rapid changes
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,1500);
+  save._sbTimer=setTimeout(saveToSupabase,3000);
 }
 function load(){
   try{
@@ -2254,29 +2320,33 @@ function go(pg){
   rp(pg);
 }
 function rp(p){
-  if(p==='calendar')rCalendar();
-  if(p==='trades')renderTrades();
-  if(p==='notebook')renderNotebook();
-  if(p==='replay')rReplay();
-  if(p==='summary')renderSummary();
-  if(p==='analytics')renderAnalytics();
-  if(p==='equity')renderEquity();
-  if(p==='visualize')initViz();
-  if(p==='data')renderData();
-  if(p==='checklist')renderCL();
-  if(p==='risk')calcRisk();
-  if(p==='news')loadNews();
-  if(p==='deposit')renderDeposit();
-  if(p==='report')renderReport();
-  if(p==='settings')renderSettings();
-  if(p==='feedback')renderFeedbackHistory();
-  if(p==='aibot'){
-    renderAIStatsStrip();
+  // ══ PERF: defer heavy renders to next frame so nav click/animation is instant ══
+  const heavy=()=>{
+    if(p==='calendar')rCalendar();
+    if(p==='trades')renderTrades();
+    if(p==='notebook')renderNotebook();
+    if(p==='replay')rReplay();
+    if(p==='summary')renderSummary();
+    if(p==='analytics')renderAnalytics();
+    if(p==='equity')renderEquity();
+    if(p==='visualize')initViz();
+    if(p==='data')renderData();
+    if(p==='checklist')renderCL();
+    if(p==='risk')calcRisk();
+    if(p==='news')loadNews();
+    if(p==='deposit')renderDeposit();
+    if(p==='report')renderReport();
+    if(p==='settings')renderSettings();
+    if(p==='feedback')renderFeedbackHistory();
+    if(p==='aibot'){renderAIStatsStrip();
     const msgs=document.getElementById('ai-messages');
     if(msgs&&!msgs.innerHTML.trim()){
       appendBotMsg(`Hey! I'm **YzenBot** — your local AI trading coach for **${S.cur}**.\n\nI work 100% offline — no internet needed. I read all your trade data directly and give you instant analysis.\n\nTap a quick chip above or ask me anything. 👇`);
     }
   }
+  };
+  // ══ PERF: run in next animation frame so the page transition paints first ══
+  requestAnimationFrame(heavy);
 }
 
 // ══════ ACCOUNTS ══════
@@ -3130,7 +3200,12 @@ function renderEquity(){
 function drawEquityCurve(trades){
   const canvas=document.getElementById('equity-canvas');
   const ctx=canvas.getContext('2d');
-  canvas.width=canvas.offsetWidth*2;canvas.height=520;
+  // ══ PERF: read offsetWidth once (forces layout), only reset if changed ══
+  const dpr=window.devicePixelRatio||1;
+  const cssW=canvas.parentElement?canvas.parentElement.clientWidth:canvas.offsetWidth;
+  const newW=Math.round(cssW*dpr);
+  const newH=520;
+  if(canvas.width!==newW||canvas.height!==newH){canvas.width=newW;canvas.height=newH;canvas.style.width=cssW+'px';canvas.style.height=Math.round(newH/dpr)+'px';}
   const W=canvas.width,H=canvas.height,PAD=40;
   ctx.clearRect(0,0,W,H);
   if(!trades.length){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.font='24px DM Sans';ctx.textAlign='center';ctx.fillText('No trades to display',W/2,H/2);return;}
@@ -3174,7 +3249,12 @@ function drawEquityCurve(trades){
 function drawDDCurve(trades){
   const canvas=document.getElementById('dd-canvas');if(!canvas)return;
   const ctx=canvas.getContext('2d');
-  canvas.width=canvas.offsetWidth*2;canvas.height=240;
+  // ══ PERF: read width once, skip reset if unchanged ══
+  const dpr=window.devicePixelRatio||1;
+  const cssW=canvas.parentElement?canvas.parentElement.clientWidth:canvas.offsetWidth;
+  const newW=Math.round(cssW*dpr);
+  const newH=240;
+  if(canvas.width!==newW||canvas.height!==newH){canvas.width=newW;canvas.height=newH;canvas.style.width=cssW+'px';canvas.style.height=Math.round(newH/dpr)+'px';}
   const W=canvas.width,H=canvas.height,PAD=20;
   ctx.clearRect(0,0,W,H);
   let peak=0,eq=0,dds=[0];
