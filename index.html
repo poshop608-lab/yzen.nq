@@ -1528,9 +1528,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
       <button class="btn btn-gold btn-sm" onclick="saveSettings()">Save Changes</button>
     </div>
-    <div style="background:var(--green-dim);border:1px solid rgba(34,211,160,.25);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--green);font-family:var(--fm)">
-      <span style="font-size:16px">💾</span>
-      <span>Your data is saved automatically in your browser's local storage — it will stay there permanently unless you clear your browser data or use a different browser/device.</span>
+    <div style="background:var(--blue-dim);border:1px solid rgba(96,165,250,.25);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--blue);font-family:var(--fm)">
+      <span style="font-size:16px">☁️</span>
+      <span>Your data syncs automatically to the cloud via Supabase — accessible from any device when signed in.</span>
     </div>
     <div class="g2">
       <div>
@@ -1872,10 +1872,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <div class="toast" id="toast"></div>
 
+<!-- ── CUSTOM CONFIRM MODAL ── -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:rgba(8,10,20,0.98);border:1px solid var(--bdr2);border-radius:20px;padding:28px 32px;width:320px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.8);animation:authIn .2s ease;text-align:center;">
+    <div id="confirm-icon" style="font-size:36px;margin-bottom:10px"></div>
+    <div id="confirm-title" style="font-family:var(--fd);font-size:22px;letter-spacing:.04em;color:var(--text);margin-bottom:6px"></div>
+    <div id="confirm-msg" style="font-size:12px;color:var(--text2);margin-bottom:22px;line-height:1.6"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="confirm-cancel" style="flex:1;padding:11px;border-radius:10px;background:var(--g2);border:1px solid var(--bdr);color:var(--text2);font-family:var(--ff);font-size:13px;cursor:pointer;" onclick="confirmResolve(false)">Cancel</button>
+      <button id="confirm-ok" style="flex:1;padding:11px;border-radius:10px;background:var(--red-dim);border:1px solid rgba(248,113,113,.3);color:var(--red);font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;" onclick="confirmResolve(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════ STATE ══════
 let S={
-  accounts:['50K Lucid'],cur:'50K Lucid',
+  accounts:[],cur:'',
   trades:[],notes:[],deposits:[],newsEvents:[],
   replayNotes:{}, // tradeId -> [{time, note}]
   envFields:[
@@ -1905,6 +1918,7 @@ function save(){
     localStorage.setItem('yz4',payload);
     localStorage.setItem('yz4_backup',payload);
     localStorage.setItem('yz4_ts',Date.now().toString());
+    // Flash saved indicator
     const ind=document.getElementById('save-indicator');
     if(ind){ind.style.opacity='1';clearTimeout(ind._t);ind._t=setTimeout(()=>ind.style.opacity='0',1800);}
   }catch(e){
@@ -1914,18 +1928,13 @@ function save(){
       localStorage.setItem('yz4',JSON.stringify(S));
     }catch(e2){}
   }
-  // Debounce Supabase save — won't run until SB + currentUser exist
-  clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,1500);
 }
 function load(){
   try{
     const d=localStorage.getItem('yz4')||localStorage.getItem('yz4_backup');
     if(d){
       const parsed=JSON.parse(d);
-      // Deep merge: keep defaults for missing keys but restore all saved data
       S={...S,...parsed};
-      // Restore nested arrays/objects explicitly
       if(parsed.trades)S.trades=parsed.trades;
       if(parsed.notes)S.notes=parsed.notes;
       if(parsed.deposits)S.deposits=parsed.deposits;
@@ -1937,9 +1946,13 @@ function load(){
       if(parsed.filterPresets)S.filterPresets=parsed.filterPresets;
       if(parsed.replayNotes)S.replayNotes=parsed.replayNotes;
       if(parsed.tradeImages)S.tradeImages=parsed.tradeImages;
+      // Always restore the saved current account
+      if(parsed.cur)S.cur=parsed.cur;
+      // Ensure cur is valid
+      if(!S.accounts||S.accounts.length===0)S.accounts=[];
+      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
     }
   }catch(e){
-    // Try backup if main is corrupted
     try{
       const b=localStorage.getItem('yz4_backup');
       if(b)S={...S,...JSON.parse(b)};
@@ -1952,7 +1965,7 @@ const MNS=['January','February','March','April','May','June','July','August','Se
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const TICK_VALUES={MNQ:2,NQ:20,MES:1.25,ES:12.5,MYM:0.5,YM:5};
 
-function acctTrades(){return S.trades.filter(t=>(t.account||'50K Lucid')===S.cur);}
+function acctTrades(){return S.trades.filter(t=>t.account===S.cur);}
 function dateTrades(ds){return acctTrades().filter(t=>t.date===ds);}
 function fmtM(v,s=true){const sgn=s&&v>0?'+':'';return sgn+'$'+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fmtP(v){return v>0?`<span class="pp">${fmtM(v)}</span>`:v<0?`<span class="pn">${fmtM(v)}</span>`:`<span class="pz">$0.00</span>`;}
@@ -2067,14 +2080,19 @@ function openAddAcct(){document.getElementById('am-t').textContent='Add Account'
 function renameAcct(){document.getElementById('am-t').textContent='Rename';document.getElementById('am-n').value=S.cur;document.getElementById('amodal').dataset.mode='rename';openM('amodal');}
 function saveAcct(){
   const n=document.getElementById('am-n').value.trim();if(!n){toast('⚠ Name required');return;}
+  const isFirst=S.accounts.length===0;
   if(document.getElementById('amodal').dataset.mode==='add'){S.accounts.push(n);S.cur=n;}
   else{const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;}
-  document.getElementById('ac-name').textContent=S.cur;save();closeM('amodal');toast('Saved ✓');
+  document.getElementById('ac-name').textContent=S.cur;
+  save();closeM('amodal');
+  if(isFirst){rCalendar();toast('Account created ✓ — start logging trades!');}
+  else{toast('Saved ✓');}
 }
-function delAcct(){
+async function delAcct(){
   if(S.accounts.length===1){toast('⚠ Cannot delete last account');return;}
-  if(!confirm('Delete "'+S.cur+'"?'))return;
-  S.accounts=S.accounts.filter(a=>a!==S.cur);S.cur=S.accounts[0];
+  const ok=await customConfirm('Delete "'+S.cur+'" and all its data?','🗑','Delete Account','Delete');
+  if(!ok)return;
+  S.accounts=S.accounts.filter(a=>a!==S.cur);S.cur=S.accounts[0]||'';
   document.getElementById('ac-name').textContent=S.cur;
   document.getElementById('ac-drop').classList.remove('open');save();toast('Deleted');
 }
@@ -2106,7 +2124,7 @@ function rCalendar(){
   document.getElementById('cal-cells').innerHTML=html;
   // Stats
   const mT=filterTime(acctTrades(),'month');const ms=getStats(mT);
-  const dep=S.deposits.filter(d=>(d.account||'50K Lucid')===S.cur&&d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
+  const dep=S.deposits.filter(d=>d.account===S.cur&&d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   const goalPct=dep?((ms.pnl/dep)*100).toFixed(1):0;
   document.getElementById('cal-stats').innerHTML=`
     <div class="sc gold"><div class="sl">Month P&L</div><div class="sv ${ms.pnl>=0?'pos':'neg'}">${ms.pnl>=0?'+':''}$${Math.abs(ms.pnl).toFixed(0)}</div><div class="sd">${ms.total} trades</div><div class="sc-glow" style="background:var(--gold)"></div></div>
@@ -2271,7 +2289,7 @@ function renderTrades(){
       <td><button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button></td>
     </tr>`).join('');
 }
-function delTrade(i){if(confirm('Delete?')){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
+async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
 
 // ══════ NOTES ══════
 let _nbTab='notes';
@@ -2291,7 +2309,7 @@ function renderNotebook(){
 }
 function renderNotes(q=''){
   const el=document.getElementById('notes-list');
-  let notes=S.notes.filter(n=>(n.account||'50K Lucid')===S.cur&&(!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q)));
+  let notes=S.notes.filter(n=>n.account===S.cur&&(!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q)));
   if(!notes.length){el.innerHTML=`<div class="empty"><div class="empty-ic">📝</div><div class="empty-t">No notes yet — add one above</div></div>`;return;}
   el.innerHTML=[...notes].reverse().map((n,i)=>`
     <div class="card mb3" style="border-left:3px solid var(--gold)">
@@ -2402,7 +2420,7 @@ function delReplayNote(id,i){if(!S.replayNotes[id])return;S.replayNotes[id].spli
 // ══════ SUMMARY ══════
 function setTime(t,el){S.sumTime=t;document.querySelectorAll('#sum-tf .tf-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderSummary();}
 function renderSummary(){
-  const dep=S.deposits.filter(d=>(d.account||'50K Lucid')===S.cur);
+  const dep=S.deposits.filter(d=>d.account===S.cur);
   const totalDep=dep.filter(d=>d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   const totalPay=dep.filter(d=>d.type==='Payout').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   if(!totalDep){
@@ -2775,7 +2793,7 @@ function renderData(){
 }
 function copyData(){const pre=document.querySelector('#data-content pre');if(pre){navigator.clipboard.writeText(pre.textContent);toast('Copied ✓');}else toast('No data');}
 function copyRecent(){const t=S.trades[S.trades.length-1];if(t){navigator.clipboard.writeText(JSON.stringify(t,null,2));toast('Copied ✓');}else toast('No trades');}
-function clearAllData(){if(confirm('Clear ALL data?')){S.trades=[];save();renderData();toast('Cleared');}}
+async function clearAllData(){const ok=await customConfirm('All trade data will be permanently erased.','⚠️','Clear All Data','Clear All');if(ok){S.trades=[];save();renderData();toast('Cleared');}}
 function exportCSV(){
   if(!S.trades.length){toast('No trades');return;}
   const h='Date,Ticker,PnL,RR,Grade,Session,Outcome,Duration,Notes\n';
@@ -2860,7 +2878,7 @@ function addDeposit(){
   save();renderDeposit();toast('Saved ✓');
 }
 function renderDeposit(){
-  const deps=S.deposits.filter(d=>(d.account||'50K Lucid')===S.cur);
+  const deps=S.deposits.filter(d=>d.account===S.cur);
   const totalDep=deps.filter(d=>d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   const totalPay=deps.filter(d=>d.type==='Payout').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   const tradePnl=acctTrades().reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
@@ -2939,9 +2957,9 @@ function saveCLItem(){
   save();renderCL();renderSettings();closeM('cl-modal');
   showSuccessBurst('✅','ITEM ADDED',n,false);
 }
-function removeEnvField(i){if(!confirm('Remove?'))return;S.envFields.splice(i,1);save();renderSettings();}
-function removeCLItem(i){if(!confirm('Remove?'))return;S.checklist.items.splice(i,1);save();renderSettings();renderCL();}
-function resetAcctData(){if(confirm('Reset all trades for "'+S.cur+'"?')){S.trades=S.trades.filter(t=>(t.account||'50K Lucid')!==S.cur);S.deposits=S.deposits.filter(d=>(d.account||'50K Lucid')!==S.cur);save();renderSummary();toast('Reset ✓');}}
+async function removeEnvField(i){const ok=await customConfirm('Remove this environment field?','🗑','Remove Field','Remove');if(!ok)return;S.envFields.splice(i,1);save();renderSettings();}
+async function removeCLItem(i){const ok=await customConfirm('Remove this checklist item?','🗑','Remove Item','Remove');if(!ok)return;S.checklist.items.splice(i,1);save();renderSettings();renderCL();}
+async function resetAcctData(){const ok=await customConfirm('Reset all trades and deposits for "'+S.cur+'"?','⚠️','Reset Account','Reset');if(ok){S.trades=S.trades.filter(t=>(t.account||S.cur)!==S.cur);S.deposits=S.deposits.filter(d=>(d.account||S.cur)!==S.cur);save();renderSummary();toast('Reset ✓');}}
 
 // ══════ SUCCESS BURST ══════
 function showSuccessBurst(icon,title,sub,doConfetti){
@@ -3423,6 +3441,28 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
 // ══════ TOAST ══════
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2400);}
 
+// ── Custom confirm dialog (replaces browser confirm()) ──
+let _confirmResolve=null;
+function customConfirm(msg,icon='🗑',title='Are you sure?',okLabel='Confirm',okColor='var(--red)'){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;
+    const m=document.getElementById('confirm-modal');
+    document.getElementById('confirm-icon').textContent=icon;
+    document.getElementById('confirm-title').textContent=title;
+    document.getElementById('confirm-msg').textContent=msg;
+    const ok=document.getElementById('confirm-ok');
+    ok.textContent=okLabel;
+    ok.style.background=okColor==='var(--red)'?'var(--red-dim)':'var(--gold-dim)';
+    ok.style.borderColor=okColor==='var(--red)'?'rgba(248,113,113,.3)':'rgba(201,168,76,.3)';
+    ok.style.color=okColor;
+    m.style.display='flex';
+  });
+}
+function confirmResolve(val){
+  document.getElementById('confirm-modal').style.display='none';
+  if(_confirmResolve){_confirmResolve(val);_confirmResolve=null;}
+}
+
 
 // ══ MOBILE SIDEBAR ══
 function toggleSidebar(){
@@ -3622,12 +3662,6 @@ function renderReport(){
 }
 
 // ══════ INIT ══════
-// ── All auth variables and credentials declared before initAuth is called ──
-const SUPABASE_URL='https://odevhkdsaqombrpinuli.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kZXZoa2RzYXFvbWJycGludWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MjQ3MDgsImV4cCI6MjA4OTUwMDcwOH0.XexvkFqREctui3U-1EwjX6Pz6kPU_QBdzQMHV9BhKrE';
-let SB = null;
-let currentUser = null;
-const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 load();
 initAuth(); // Auth system handles rCalendar() after login
 document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
@@ -3658,7 +3692,9 @@ setTimeout(showDailyQuote,1800);
 // ══════════════════════════════════════
 //  SUPABASE AUTH SYSTEM
 // ══════════════════════════════════════
-// (SB, currentUser, ADMIN_EMAIL declared above near initAuth call)
+let SB = null; // Supabase client
+let currentUser = null;
+const ADMIN_EMAIL = localStorage.getItem('yz_admin') || '';
 
 const SQL_SCHEMA = `
 -- Run this in your Supabase SQL Editor
@@ -3722,32 +3758,16 @@ function initSupabase(url,key){
 async function checkSession(){
   if(!SB)return;
   try{
-    // Always show auth screen first
     document.getElementById('auth-screen').classList.remove('hidden');
     const{data:{session}}=await SB.auth.getSession();
     if(session){
-      // Show logged-in state on auth screen briefly, then enter
+      // Session exists — auto-enter immediately, no "Continue as" prompt
       currentUser=session.user;
-      const name=currentUser?.user_metadata?.full_name||currentUser?.email?.split('@')[0]||'User';
-      // Show user chip on login screen
-      const loginView=document.getElementById('auth-login-view');
-      if(loginView){
-        loginView.innerHTML=`
-          <div style="text-align:center;padding:20px 0">
-            <div class="auth-user-chip" style="justify-content:center;margin-bottom:16px">
-              <div class="auth-avatar">${name.charAt(0).toUpperCase()}</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:var(--text)">${name}</div>
-                <div style="font-size:10px;color:var(--text3)">${currentUser.email}</div>
-              </div>
-            </div>
-            <button class="auth-btn-main" onclick="continueSession()" style="margin-bottom:10px">Continue as ${name} →</button>
-            <div style="font-size:11px;color:var(--text3);margin-top:10px;cursor:pointer" onclick="signOut()">↪ Sign in with a different account</div>
-          </div>`;
-      }
-      window._pendingSession=true;
+      await loadUserData();
+      enterApp();
+      return;
     }
-    // Listen for auth changes (handles Google OAuth redirect)
+    // No session — listen for auth changes (handles Google OAuth redirect)
     SB.auth.onAuthStateChange(async(event,session)=>{
       if(event==='SIGNED_IN'&&session){
         currentUser=session.user;
@@ -3867,7 +3887,6 @@ async function saveToSupabase(){
 function enterApp(){
   document.getElementById('auth-screen').classList.add('hidden');
   document.body.classList.remove('auth-open');
-  // Update user display in sidebar
   const name=currentUser?.user_metadata?.full_name||currentUser?.email?.split('@')[0]||'User';
   const email=currentUser?.email||'';
   const el=document.querySelector('.u-name');
@@ -3887,12 +3906,26 @@ function enterApp(){
     btn.onclick=signOut;
     foot.appendChild(btn);
   }
-  rCalendar();
-  toast('Welcome back, '+name+' ✓');
+  // If user has no accounts yet, prompt them to create their first one
+  if(!S.accounts||S.accounts.length===0){
+    setTimeout(()=>{
+      document.getElementById('am-t').textContent='Create Your First Account';
+      document.getElementById('am-n').value=name+"'s Account";
+      document.getElementById('amodal').dataset.mode='add';
+      openM('amodal');
+      toast('Welcome '+name+'! Create your first trading account 👇');
+    },400);
+  } else {
+    // Make sure sidebar shows the right account name
+    document.getElementById('ac-name').textContent=S.cur;
+    rCalendar();
+    toast('Welcome back, '+name+' ✓');
+  }
 }
 
 async function signOut(){
-  if(confirm('Sign out?')){
+  const ok=await customConfirm('You will be signed out of your account.','↪','Sign Out','Sign Out','var(--gold)');
+  if(ok){
     if(SB&&currentUser?.id!=='demo')await SB.auth.signOut();
     currentUser=null;
     location.reload();
@@ -3914,9 +3947,18 @@ function showSpinner(show){
   document.getElementById('auth-submit-btn').disabled=show;
 }
 
-// (Supabase auto-save is handled inside the main save() function below — no override needed)
+// ── Override save() to also save to Supabase ──
+const _origSave = save;
+function save(){
+  _origSave();
+  // Debounce Supabase saves (don't hammer the API)
+  clearTimeout(save._sbTimer);
+  save._sbTimer=setTimeout(saveToSupabase, 1500);
+}
 
 // ── Init Auth on Load ──
+const SUPABASE_URL='https://odevhkdsaqombrpinuli.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kZXZoa2RzYXFvbWJycGludWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MjQ3MDgsImV4cCI6MjA4OTUwMDcwOH0.XexvkFqREctui3U-1EwjX6Pz6kPU_QBdzQMHV9BhKrE';
 
 function initAuth(){
   // Always use hardcoded credentials — skip config screen
