@@ -1860,21 +1860,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
       </div>
 
-      <!-- Time row — 3 col compact -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <!-- Time row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div class="fg">
-          <label style="font-size:7px">Entry Time</label>
-          <input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px;padding:7px 6px;font-size:11px">
+          <label>Entry Time</label>
+          <input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px">
         </div>
         <div class="fg">
-          <label style="font-size:7px">Exit Time</label>
-          <input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px;padding:7px 6px;font-size:11px">
+          <label>Exit Time</label>
+          <input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px">
         </div>
-        <div class="fg">
-          <label style="font-size:7px">Duration</label>
-          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:7px 6px;font-family:var(--fm);font-size:11px;color:var(--text3);min-height:35px;display:flex;align-items:center">—</div>
-          <input type="hidden" id="t-dur">
-        </div>
+      </div>
+      <div style="margin-bottom:14px;min-height:20px">
+        <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">DURATION · </span>
+        <span id="t-dur-display" style="font-family:var(--fm);font-size:11px;color:var(--text2)">—</span>
+        <input type="hidden" id="t-dur">
       </div>
 
       <!-- Session — full width -->
