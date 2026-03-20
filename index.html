@@ -4592,53 +4592,23 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    const{data,error}=await SB.from('yz_journal').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
+    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
     if(!data||!data.data){
-      // No cloud data — push local up
-      await saveToSupabase(true);
+      // No cloud row yet — push local data up to create it
+      saveToSupabase(true);
       return;
     }
     const r=data.data;
-    const remoteTs=new Date(data.updated_at||0).getTime();
 
-    // ── MERGE trades: latest updatedAt timestamp wins per trade ──
-    const localById={};
-    S.trades.forEach(t=>{if(t.id)localById[String(t.id)]=t;});
-    const remoteById={};
-    (r.trades||[]).forEach(t=>{if(t.id)remoteById[String(t.id)]=t;});
+    // Simple merge: union of local+remote trades by ID, remote wins on conflict
+    const byId={};
+    S.trades.forEach(t=>{if(t.id)byId[String(t.id)]=t;});
+    (r.trades||[]).forEach(t=>{if(t.id)byId[String(t.id)]=t;}); // remote overwrites
+    S.trades=Object.values(byId).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-    const allIds=new Set([...Object.keys(localById),...Object.keys(remoteById)]);
-    const merged=[];
-    allIds.forEach(id=>{
-      const local=localById[id];
-      const remote=remoteById[id];
-      if(local&&remote){
-        // Both have it — whichever has newer updatedAt wins
-        const lts=local.updatedAt||0;
-        const rts=remote.updatedAt||0;
-        merged.push(lts>=rts?local:remote);
-      } else if(local){
-        // Only local — it was either newly added or deleted remotely
-        // If remote snapshot is >10s newer than trade creation, treat as deleted
-        const tradeCreated=local.updatedAt||0;
-        if(remoteTs>tradeCreated+10000){
-          // deleted on another device — skip
-        } else {
-          merged.push(local);
-        }
-      } else {
-        // Only remote — always include
-        merged.push(remote);
-      }
-    });
-
-    merged.sort((a,b)=>new Date(b.date)-new Date(a.date));
-    S.trades=merged;
-
-    // ── Settings/accounts: remote wins ──
-    if(r.notes&&r.notes.length>0)S.notes=r.notes;
-    if(r.deposits&&r.deposits.length>0)S.deposits=r.deposits;
+    if(r.notes)S.notes=r.notes;
+    if(r.deposits)S.deposits=r.deposits;
     if(r.accounts&&r.accounts.length>0){
       S.accounts=r.accounts;
       if(r.cur&&r.accounts.includes(r.cur))S.cur=r.cur;
@@ -4647,16 +4617,13 @@ async function loadUserData(){
     if(r.accountMeta)S.accountMeta=r.accountMeta;
     if(r.settings)S.settings={...S.settings,...r.settings};
     if(r.envFields&&r.envFields.length>0)S.envFields=r.envFields;
-    if(r.checklist&&r.checklist.items&&r.checklist.items.length>0)S.checklist={...S.checklist,...r.checklist};
-    if(r.filterPresets&&r.filterPresets.length>0)S.filterPresets=r.filterPresets;
-    if(r.newsEvents&&r.newsEvents.length>0)S.newsEvents=r.newsEvents;
-    if(r.replayNotes&&Object.keys(r.replayNotes||{}).length>0)S.replayNotes=r.replayNotes;
+    if(r.checklist&&r.checklist.items)S.checklist={...S.checklist,...r.checklist};
+    if(r.filterPresets)S.filterPresets=r.filterPresets;
+    if(r.newsEvents)S.newsEvents=r.newsEvents;
+    if(r.replayNotes)S.replayNotes=r.replayNotes;
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
-    // Push merged result back so all devices get the same state
-    await saveToSupabase(true);
-  }catch(e){console.warn('loadUserData catch:',e.message);}
+  }catch(e){console.warn('loadUserData:',e.message);}
 }
 
 async function manualSync(){
