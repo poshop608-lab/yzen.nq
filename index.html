@@ -613,7 +613,11 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .img-drop{border:1px dashed rgba(255,255,255,.15);border-radius:var(--r);padding:18px;text-align:center;color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s;margin-bottom:10px}
 .img-drop:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
 
-/* ── COMPACT RATING ROWS ── */
+/* ── TIME ROW ── */
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){
+  .time-row{grid-template-columns:1fr;gap:8px}
+}
 .rating-row{display:flex;flex-direction:column;gap:8px}
 .rating-meta{display:flex;align-items:center;justify-content:space-between}
 .rating-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.15em;color:var(--text2);text-transform:uppercase;font-weight:500}
@@ -638,7 +642,7 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 
 @media(max-width:768px){
   input,select,textarea{font-size:16px!important}
-  input[type="time"]{font-size:14px!important;padding:8px 6px!important}
+  input[type="time"]{font-size:13px!important;padding:8px 4px!important;letter-spacing:-.3px}
   .fg{min-width:0}
   body{flex-direction:column}
   .sidebar{
@@ -1864,20 +1868,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       </div>
 
       <!-- Time row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
         <div class="fg">
-          <label>Entry Time</label>
-          <input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px">
+          <label>Entry</label>
+          <input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px;padding:8px 8px">
         </div>
         <div class="fg">
-          <label>Exit Time</label>
-          <input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px">
+          <label>Exit</label>
+          <input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px;padding:8px 8px">
         </div>
-      </div>
-      <div style="margin-bottom:14px">
-        <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">DURATION · </span>
-        <span id="t-dur-display" style="font-family:var(--fm);font-size:11px;color:var(--text2)">—</span>
-        <input type="hidden" id="t-dur">
+        <div class="fg">
+          <label>Duration</label>
+          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 8px;font-family:var(--fm);font-size:11px;color:var(--text3);display:flex;align-items:center;height:37px">—</div>
+          <input type="hidden" id="t-dur">
+        </div>
       </div>
 
       <!-- Session — full width -->
