@@ -524,7 +524,7 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
   margin-bottom:12px;
 }
 .fm-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
-.fm-type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+.fm-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
 .fm-type{
   padding:10px 6px;border:1px solid var(--bdr);border-radius:10px;
   text-align:center;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;background:var(--g1);
@@ -1767,6 +1767,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <div class="fm-type sel" onclick="selectFMType(this,'yna')"><span class="fm-type-icon">✅</span>Yes/No/N/A</div>
       <div class="fm-type" onclick="selectFMType(this,'text')"><span class="fm-type-icon">📝</span>Text Input</div>
       <div class="fm-type" onclick="selectFMType(this,'rating')"><span class="fm-type-icon">⭐</span>Rating 1-5</div>
+      <div class="fm-type" onclick="selectFMType(this,'dropdown')"><span class="fm-type-icon">▾</span>Dropdown</div>
+    </div>
+    <!-- Dropdown options builder -->
+    <div id="fm-dropdown-opts" style="display:none;margin-bottom:12px">
+      <div style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.15em;margin-bottom:8px">OPTIONS</div>
+      <div id="fm-opts-list"></div>
+      <button class="btn btn-glass btn-sm" style="width:100%;margin-top:6px" onclick="addDropdownOpt()">+ Add Option</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn btn-glass" style="flex:1" onclick="closeFieldModal()">Cancel</button>
@@ -2550,15 +2557,49 @@ function updatePnlColor(inp){
   inp.style.borderColor=v>0?'rgba(34,211,160,.4)':v<0?'rgba(248,113,113,.4)':'var(--bdr)';
 }
 function buildEnvForm(){
-  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>`
-    <div class="yna-wrap">
+  document.getElementById('env-form').innerHTML=S.envFields.map((f,i)=>{
+    const type=f.type||'yna';
+    if(type==='dropdown'&&f.options&&f.options.length){
+      const opts=f.options.map(o=>`<option value="${o}"${S.envState[i]===o?' selected':''}>${o}</option>`).join('');
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <select style="margin-top:4px" onchange="S.envState[${i}]=this.value">
+          <option value="">— Select</option>${opts}
+        </select>
+      </div>`;
+    }
+    if(type==='text'){
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <input style="margin-top:4px" placeholder="Enter value..." value="${S.envState[i]||''}" oninput="S.envState[${i}]=this.value">
+      </div>`;
+    }
+    if(type==='rating'){
+      const cur=parseInt(S.envState[i])||0;
+      const stars=[1,2,3,4,5].map(n=>`<div class="yna${cur>=n?' y':' na'}" onclick="S.envState[${i}]='${n}';buildEnvForm()">${n}</div>`).join('');
+      return `<div class="yna-wrap">
+        <div class="yna-lbl">${f.name}</div>
+        <div class="yna-row">${stars}</div>
+      </div>`;
+    }
+    // Default: Yes/No/NA
+    return `<div class="yna-wrap">
       <div class="yna-lbl">${f.name}</div>
       <div class="yna-row">
         <div class="yna na" id="yn-${i}-Y" onclick="setYNA(${i},'Yes')">Yes</div>
         <div class="yna na" id="yn-${i}-N" onclick="setYNA(${i},'No')">No</div>
         <div class="yna na" id="yn-${i}-X" onclick="setYNA(${i},'N/A')">N/A</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  // Restore YNA states
+  S.envFields.forEach((f,i)=>{
+    if((f.type||'yna')==='yna'&&S.envState[i]){
+      const map={'Yes':'Y','No':'N','N/A':'X'};
+      const el=document.getElementById(`yn-${i}-${map[S.envState[i]]}`);
+      if(el){el.className='yna';el.classList.add(S.envState[i]==='Yes'?'y':S.envState[i]==='No'?'n':'na');}
+    }
+  });
 }
 function setYNA(fi,val){
   S.envState[fi]=val;
@@ -3490,11 +3531,34 @@ function closeFieldModal(){document.getElementById('field-modal').classList.remo
 function selectFMType(el,type){
   document.querySelectorAll('#field-modal .fm-type').forEach(t=>t.classList.remove('sel'));
   el.classList.add('sel');window._fmType=type;
+  // Show/hide dropdown options builder
+  const ddOpts=document.getElementById('fm-dropdown-opts');
+  if(ddOpts)ddOpts.style.display=type==='dropdown'?'block':'none';
+  if(type==='dropdown'){
+    const list=document.getElementById('fm-opts-list');
+    if(list&&list.children.length===0){addDropdownOpt();addDropdownOpt();}
+  }
+}
+function addDropdownOpt(){
+  const list=document.getElementById('fm-opts-list');
+  if(!list)return;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;margin-bottom:6px';
+  div.innerHTML=`<input class="fm-input" style="flex:1;margin:0;padding:8px 10px" placeholder="Option value">
+    <button class="btn btn-red btn-sm" style="padding:4px 8px" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(div);
 }
 function saveNewField(){
   const n=document.getElementById('fm-name').value.trim();
   if(!n){document.getElementById('fm-name').style.borderColor='var(--red)';setTimeout(()=>document.getElementById('fm-name').style.borderColor='',800);return;}
-  S.envFields.push({name:n,type:window._fmType||'yna'});
+  const type=window._fmType||'yna';
+  const field={name:n,type};
+  if(type==='dropdown'){
+    const opts=[...document.querySelectorAll('#fm-opts-list input')].map(i=>i.value.trim()).filter(Boolean);
+    if(opts.length<2){toast('⚠ Add at least 2 options');return;}
+    field.options=opts;
+  }
+  S.envFields.push(field);
   save();renderSettings();closeFieldModal();
   showSuccessBurst('✅','FIELD ADDED',n,false);
 }
