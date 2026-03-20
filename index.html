@@ -2178,7 +2178,7 @@ function save(){
   }
   // Debounce Supabase cloud sync
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,500);
+  save._sbTimer=setTimeout(()=>saveToSupabase(true),500); // silent auto-save
 }
 function load(){
   try{
@@ -3350,12 +3350,23 @@ function exportCSV(){
 }
 
 // ══════ CHECKLIST ══════
-function clScore(){const i=S.checklist.items;if(i.filter(x=>x.req).some(x=>!x.on))return 0;return i.reduce((s,x)=>s+(x.on?x.pts:0),0);}
+function clScore(){
+  const items=S.checklist.items;
+  return items.reduce((s,x)=>s+(x.on?x.pts:0),0);
+}
+function clCanTrade(){
+  const items=S.checklist.items;
+  const reqMissed=items.filter(x=>x.req&&!x.on).length;
+  const sc=clScore();
+  return reqMissed===0&&sc>=60;
+}
 function renderCL(){
-  const sc=clScore();const pass=sc>=60;
+  const sc=clScore();
+  const pass=clCanTrade();
+  const reqMissed=S.checklist.items.filter(x=>x.req&&!x.on).length;
   document.getElementById('ci-score').textContent=sc;
   const ring=document.getElementById('ci-ring');ring.className='ci-ring '+(pass?'go':'no');
-  document.getElementById('ci-word').innerHTML=pass?'TRADE':'NO<br>TRADE';
+  document.getElementById('ci-word').innerHTML=pass?'TRADE':(reqMissed>0?'MISS<br>REQ':'NO<br>TRADE');
   document.getElementById('ac-chk').checked=S.checklist.autoClear;
   document.getElementById('cl-items').innerHTML=S.checklist.items.map((item,i)=>`
     <div class="cl-item${item.on?' on':''} ${item.req?'req':''}" onclick="toggleCL(${i})">
@@ -3367,7 +3378,12 @@ function renderCL(){
       <div style="font-family:var(--fd);font-size:22px;color:${item.on?'var(--green)':'var(--text3)'}">${item.on?item.pts:0}</div>
     </div>`).join('');
 }
-function toggleCL(i){S.checklist.items[i].on=!S.checklist.items[i].on;save();renderCL();}
+function toggleCL(i){
+  S.checklist.items[i].on=!S.checklist.items[i].on;
+  // Save locally only - checklist is device-specific
+  try{localStorage.setItem('yz4',JSON.stringify(S));}catch(e){}
+  renderCL();
+}
 function clearCL(){S.checklist.items.forEach(i=>i.on=false);save();renderCL();}
 function resetCL(){S.checklist.items.forEach(i=>i.on=false);save();renderCL();toast('Reset ✓');}
 function toggleAC(){S.checklist.autoClear=document.getElementById('ac-chk').checked;save();}
@@ -4494,84 +4510,66 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    // Use maybeSingle() so missing row returns null instead of error
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
-    if(error){console.warn('load error:',error.message);toast('⚠ Load: '+error.message);return;}
-    if(!data||!data.data)return; // no remote data yet
+    if(error){console.warn('load error:',error.message);return;}
+    if(!data||!data.data)return;
     const r=data.data;
-    if(r.trades)S.trades=r.trades;
-    if(r.notes)S.notes=r.notes;
-    if(r.deposits)S.deposits=r.deposits;
-    if(r.accounts)S.accounts=r.accounts;
-    if(r.cur)S.cur=r.cur;
-    if(r.accountMeta)S.accountMeta=r.accountMeta;
-    if(r.settings)S.settings={...S.settings,...r.settings};
-    if(r.envFields)S.envFields=r.envFields;
-    if(r.checklist)S.checklist={...S.checklist,...r.checklist};
-    if(r.filterPresets)S.filterPresets=r.filterPresets;
-    if(r.newsEvents)S.newsEvents=r.newsEvents;
-    if(r.replayNotes)S.replayNotes=r.replayNotes;
-    if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-    try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
+    const remoteTradeCount=(r.trades||[]).length;
+    const localTradeCount=S.trades.length;
+    // Only load remote if it has MORE data than local — prevents empty cloud wiping local
+    if(remoteTradeCount===0&&localTradeCount>0){
+      // Cloud is empty but we have local data — push local up instead
+      console.log('Cloud empty, pushing local data up...');
+      await saveToSupabase(true);
+      return;
+    }
+    // Use whichever has more trades
+    if(remoteTradeCount>=localTradeCount){
+      if(r.trades)S.trades=r.trades;
+      if(r.notes)S.notes=r.notes;
+      if(r.deposits)S.deposits=r.deposits;
+      if(r.accounts)S.accounts=r.accounts;
+      if(r.cur)S.cur=r.cur;
+      if(r.accountMeta)S.accountMeta=r.accountMeta;
+      if(r.settings)S.settings={...S.settings,...r.settings};
+      if(r.envFields)S.envFields=r.envFields;
+      if(r.checklist)S.checklist={...S.checklist,...r.checklist};
+      if(r.filterPresets)S.filterPresets=r.filterPresets;
+      if(r.newsEvents)S.newsEvents=r.newsEvents;
+      if(r.replayNotes)S.replayNotes=r.replayNotes;
+      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+      try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
+    }
   }catch(e){console.warn('loadUserData catch:',e.message);}
 }
 
 async function manualSync(){
   const btn=document.getElementById('sync-btn');
-  if(!SB||!currentUser||currentUser.id==='demo'){
-    toast('⚠ Not signed in');
-    return;
-  }
+  if(!SB||!currentUser||currentUser.id==='demo'){toast('⚠ Not signed in');return;}
   if(btn){btn.textContent='⟳';btn.style.color='var(--gold)';}
-  try{
-    // Step 1: Push local data up
-    const payload={
-      user_id:currentUser.id,
-      user_email:currentUser.email,
-      user_name:currentUser.user_metadata?.full_name||currentUser.email,
-      data:{
-        trades:S.trades,notes:S.notes,deposits:S.deposits,
-        cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
-        settings:S.settings,envFields:S.envFields,
-        checklist:S.checklist,filterPresets:S.filterPresets,
-        newsEvents:S.newsEvents,replayNotes:S.replayNotes
-      },
-      updated_at:new Date().toISOString()
-    };
-    const{error:pushErr}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
-    if(pushErr){
-      toast('⚠ Push failed: '+pushErr.message);
-      if(btn){btn.textContent='☁️';btn.style.color='';}
-      return;
-    }
-    // Step 2: Pull back to confirm + refresh UI
-    await loadUserData();
-    rCalendar();
-    if(btn){
-      btn.textContent='✓';btn.style.color='var(--green)';
-      setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
-    }
-    toast('☁️ Synced!');
-  }catch(e){
-    console.error('manualSync error:',e);
-    toast('⚠ Sync error: '+e.message);
-    if(btn){btn.textContent='☁️';btn.style.color='';}
+  await saveToSupabase(false);
+  await loadUserData();
+  rCalendar();
+  if(btn){
+    btn.textContent='✓';btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
   }
 }
-async function saveToSupabase(){
+async function saveToSupabase(silent=false){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   const overlay=document.getElementById('cloud-sync-overlay');
   const card=document.getElementById('cloud-sync-card');
   const title=document.getElementById('cloud-sync-title');
   const sub=document.getElementById('cloud-sync-sub');
   const showOverlay=(txt,col,sub2)=>{
-    if(!overlay)return;
+    if(!overlay||silent)return;
     overlay.style.display='flex';
     if(card)card.style.animation='cloudSyncIn .25s cubic-bezier(.34,1.56,.64,1) forwards';
     if(title){title.textContent=txt;title.style.color=col;title.style.textShadow='0 0 12px '+col+'88';}
     if(sub)sub.textContent=sub2;
   };
   const hideOverlay=(delay)=>setTimeout(()=>{
+    if(silent)return;
     if(card)card.style.animation='cloudSyncOut .3s ease forwards';
     setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
   },delay);
@@ -4590,7 +4588,7 @@ async function saveToSupabase(){
     updated_at:new Date().toISOString()
   };
   try{
-    const{error}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id',ignoreDuplicates:false});
+    const{error}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
     if(error){
       console.error('upsert error:',error);
       toast('⚠ '+error.message);
