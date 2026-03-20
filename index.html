@@ -2144,7 +2144,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 // ══════ STATE ══════
 let S={
   accounts:[],cur:'',
-  trades:[],notes:[],deposits:[],newsEvents:[],
+  trades:[],notes:[],deposits:[],newsEvents:[],deletedIds:[],
   replayNotes:{}, // tradeId -> [{time, note}]
   envFields:[
     {name:'9:30 Judas Swing?'},{name:'Silver Bullet?'},{name:'Clear Manipulation?'},
@@ -2194,6 +2194,7 @@ function load(){
       const parsed=JSON.parse(d);
       S={...S,...parsed};
       if(parsed.trades)S.trades=parsed.trades;
+      if(parsed.deletedIds)S.deletedIds=parsed.deletedIds;
       if(parsed.notes)S.notes=parsed.notes;
       if(parsed.deposits)S.deposits=parsed.deposits;
       if(parsed.accounts)S.accounts=parsed.accounts;
@@ -2772,7 +2773,20 @@ function renderTrades(){
     </div>`;
   }).join('');
 }
-async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
+async function delTrade(i){
+  const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');
+  if(ok){
+    const t=S.trades[i];
+    if(t&&t.id){
+      if(!S.deletedIds)S.deletedIds=[];
+      S.deletedIds.push(String(t.id));
+      // Keep only last 500 deleted IDs to avoid bloat
+      if(S.deletedIds.length>500)S.deletedIds=S.deletedIds.slice(-500);
+    }
+    S.trades.splice(i,1);
+    save();renderTrades();toast('Deleted');
+  }
+}
 
 function openTradeDetail(i){
   const t=S.trades[i];
@@ -4471,22 +4485,13 @@ function startRealtimeSync(){
     },async(payload)=>{
       const remote=payload.new?.data;
       if(!remote)return;
-      // Merge trades properly (same as loadUserData)
-      const localById={};
-      S.trades.forEach(t=>{if(t.id)localById[String(t.id)]=t;});
-      const remoteById={};
-      (remote.trades||[]).forEach(t=>{if(t.id)remoteById[String(t.id)]=t;});
-      const allIds=new Set([...Object.keys(localById),...Object.keys(remoteById)]);
-      const merged=[];
-      allIds.forEach(id=>{
-        const local=localById[id];
-        const rem=remoteById[id];
-        if(local&&rem){merged.push((local.updatedAt||0)>=(rem.updatedAt||0)?local:rem);}
-        else if(rem){merged.push(rem);}
-        else if(local){merged.push(local);}
-      });
-      merged.sort((a,b)=>new Date(b.date)-new Date(a.date));
-      S.trades=merged;
+      // Merge with deletedIds respected
+      const rtDeleted=new Set([...(S.deletedIds||[]),...(remote.deletedIds||[])].map(String));
+      S.deletedIds=[...rtDeleted];
+      const rtById={};
+      S.trades.forEach(t=>{if(t.id&&!rtDeleted.has(String(t.id)))rtById[String(t.id)]=t;});
+      (remote.trades||[]).forEach(t=>{if(t.id&&!rtDeleted.has(String(t.id)))rtById[String(t.id)]=t;});
+      S.trades=Object.values(rtById).sort((a,b)=>new Date(b.date)-new Date(a.date));
       if(remote.notes)S.notes=remote.notes;
       if(remote.deposits)S.deposits=remote.deposits;
       if(remote.accounts&&remote.accounts.length>0){
@@ -4601,10 +4606,16 @@ async function loadUserData(){
     }
     const r=data.data;
 
-    // Simple merge: union of local+remote trades by ID, remote wins on conflict
+    // Merge deletedIds first — union of all known deleted IDs
+    const localDeleted=new Set((S.deletedIds||[]).map(String));
+    const remoteDeleted=new Set((r.deletedIds||[]).map(String));
+    const allDeleted=new Set([...localDeleted,...remoteDeleted]);
+    S.deletedIds=[...allDeleted];
+
+    // Merge trades: union by ID, remote wins on conflict, skip any deleted IDs
     const byId={};
-    S.trades.forEach(t=>{if(t.id)byId[String(t.id)]=t;});
-    (r.trades||[]).forEach(t=>{if(t.id)byId[String(t.id)]=t;}); // remote overwrites
+    S.trades.forEach(t=>{if(t.id&&!allDeleted.has(String(t.id)))byId[String(t.id)]=t;});
+    (r.trades||[]).forEach(t=>{if(t.id&&!allDeleted.has(String(t.id)))byId[String(t.id)]=t;});
     S.trades=Object.values(byId).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
     if(r.notes)S.notes=r.notes;
@@ -4663,6 +4674,7 @@ async function saveToSupabase(silent=false){
     user_name:currentUser.user_metadata?.full_name||currentUser.email,
     data:{
       trades:S.trades,notes:S.notes,deposits:S.deposits,
+        deletedIds:S.deletedIds||[],
       cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
       settings:S.settings,envFields:S.envFields,
       checklist:S.checklist,filterPresets:S.filterPresets,
