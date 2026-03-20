@@ -391,7 +391,7 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.8);
   display:none;align-items:flex-start;justify-content:center;
-  z-index:500;backdrop-filter:blur(4px);overflow-y:auto;padding:24px;
+  z-index:1001;backdrop-filter:blur(4px);overflow-y:auto;padding:24px;
 }
 .overlay.open{display:flex;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -2178,7 +2178,7 @@ function save(){
   }
   // Debounce Supabase cloud sync
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,1500);
+  save._sbTimer=setTimeout(saveToSupabase,800);
 }
 function load(){
   try{
@@ -3819,7 +3819,16 @@ function addNewsEvent(){
 }
 
 // ══════ MODAL ══════
-function openM(id){document.getElementById(id).classList.add('open');}
+function openM(id){
+  document.getElementById(id).classList.add('open');
+  // Close sidebar on mobile when modal opens
+  const sb=document.getElementById('sidebar');
+  if(sb&&window.innerWidth<=768){
+    sb.classList.remove('mob-open');
+    const ov=document.getElementById('mob-overlay');
+    if(ov)ov.style.display='none';
+  }
+}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
@@ -4256,6 +4265,7 @@ async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
+    if(error){console.warn('loadUserData error:',error.message);return;}
     if(data&&data.data&&Object.keys(data.data).length>0){
       const remote=data.data;
       if(remote.trades)S.trades=remote.trades;
@@ -4263,25 +4273,39 @@ async function loadUserData(){
       if(remote.deposits)S.deposits=remote.deposits;
       if(remote.accounts)S.accounts=remote.accounts;
       if(remote.cur)S.cur=remote.cur;
+      if(remote.accountMeta)S.accountMeta=remote.accountMeta;
       if(remote.settings)S.settings={...S.settings,...remote.settings};
       if(remote.envFields)S.envFields=remote.envFields;
       if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
       if(remote.filterPresets)S.filterPresets=remote.filterPresets;
       if(remote.newsEvents)S.newsEvents=remote.newsEvents;
       if(remote.replayNotes)S.replayNotes=remote.replayNotes;
-      // Validate cur
       if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+      // Persist to localStorage so next load is instant
+      try{
+        localStorage.setItem('yz4',JSON.stringify(S));
+        localStorage.setItem('yz4_backup',JSON.stringify(S));
+      }catch(e){}
     }
-  }catch(e){console.log('No existing data, starting fresh');}
+  }catch(e){console.warn('loadUserData catch:',e.message);}
 }
 
 async function manualSync(){
   const btn=document.getElementById('sync-btn');
+  if(!SB||!currentUser||currentUser.id==='demo'){
+    toast('⚠ Sign in to sync');
+    return;
+  }
   if(btn){btn.textContent='⟳';btn.style.color='var(--gold)';}
-  await saveToSupabase();
-  if(btn){
-    btn.textContent='✓';btn.style.color='var(--green)';
-    setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
+  try{
+    await saveToSupabase();
+    if(btn){
+      btn.textContent='✓';btn.style.color='var(--green)';
+      setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
+    }
+  }catch(e){
+    if(btn){btn.textContent='☁️';btn.style.color='';}
+    toast('Sync failed — check connection');
   }
 }
 async function saveToSupabase(){
@@ -4304,13 +4328,15 @@ async function saveToSupabase(){
       user_name:currentUser.user_metadata?.full_name||currentUser.email,
       data:{
         trades:S.trades,notes:S.notes,deposits:S.deposits,
-        cur:S.cur,accounts:S.accounts,settings:S.settings,envFields:S.envFields,
+        cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
+        settings:S.settings,envFields:S.envFields,
         checklist:S.checklist,filterPresets:S.filterPresets,
         newsEvents:S.newsEvents,replayNotes:S.replayNotes
       },
       updated_at:new Date().toISOString()
     };
-    await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
+    const{error:upsertError}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
+    if(upsertError)throw upsertError;
     // Show success state
     if(overlay){
       if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
