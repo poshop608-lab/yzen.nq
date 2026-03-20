@@ -2687,7 +2687,10 @@ function saveTrade(){
   } else {
     S.trades.push(t);
   }
-  save();closeM('tmodal');rp('calendar');
+  save();
+  clearTimeout(save._sbTimer);
+  saveToSupabase(true); // push immediately, no debounce
+  closeM('tmodal');rp('calendar');
   // Success burst
   const isWin=t.outcome==='win';
   const isBE=t.outcome==='be';
@@ -2780,11 +2783,20 @@ async function delTrade(i){
     if(t&&t.id){
       if(!S.deletedIds)S.deletedIds=[];
       S.deletedIds.push(String(t.id));
-      // Keep only last 500 deleted IDs to avoid bloat
       if(S.deletedIds.length>500)S.deletedIds=S.deletedIds.slice(-500);
     }
     S.trades.splice(i,1);
-    save();renderTrades();toast('Deleted');
+    // Save locally
+    try{
+      localStorage.setItem('yz4',JSON.stringify(S));
+      localStorage.setItem('yz4_backup',JSON.stringify(S));
+      localStorage.setItem('yz4_ts',Date.now().toString());
+    }catch(e){}
+    // Push to cloud IMMEDIATELY — no debounce
+    clearTimeout(save._sbTimer);
+    await saveToSupabase(true);
+    renderTrades();
+    toast('Deleted');
   }
 }
 
@@ -4485,13 +4497,11 @@ function startRealtimeSync(){
     },async(payload)=>{
       const remote=payload.new?.data;
       if(!remote)return;
-      // Merge with deletedIds respected
-      const rtDeleted=new Set([...(S.deletedIds||[]),...(remote.deletedIds||[])].map(String));
-      S.deletedIds=[...rtDeleted];
-      const rtById={};
-      S.trades.forEach(t=>{if(t.id&&!rtDeleted.has(String(t.id)))rtById[String(t.id)]=t;});
-      (remote.trades||[]).forEach(t=>{if(t.id&&!rtDeleted.has(String(t.id)))rtById[String(t.id)]=t;});
-      S.trades=Object.values(rtById).sort((a,b)=>new Date(b.date)-new Date(a.date));
+      // Cloud is truth — take remote trades directly, filter deleted
+      const allDeleted=new Set([...(S.deletedIds||[]),...(remote.deletedIds||[])].map(String));
+      S.deletedIds=[...allDeleted];
+      S.trades=(remote.trades||[]).filter(t=>!allDeleted.has(String(t.id)));
+      S.trades.sort((a,b)=>new Date(b.date)-new Date(a.date));
       if(remote.notes)S.notes=remote.notes;
       if(remote.deposits)S.deposits=remote.deposits;
       if(remote.accounts&&remote.accounts.length>0){
@@ -4597,27 +4607,36 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
+    const{data,error}=await SB.from('yz_journal').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
     if(!data||!data.data){
-      // No cloud row yet — push local data up to create it
-      saveToSupabase(true);
+      // No cloud row — push everything local up
+      await saveToSupabase(true);
       return;
     }
     const r=data.data;
+    const cloudTs=new Date(data.updated_at||0).getTime();
+    const localTs=parseInt(localStorage.getItem('yz4_ts')||'0');
 
-    // Merge deletedIds first — union of all known deleted IDs
-    const localDeleted=new Set((S.deletedIds||[]).map(String));
-    const remoteDeleted=new Set((r.deletedIds||[]).map(String));
-    const allDeleted=new Set([...localDeleted,...remoteDeleted]);
-    S.deletedIds=[...allDeleted];
+    // Find trades added locally AFTER last cloud save (unsynced new trades)
+    const unsyncedLocal=S.trades.filter(t=>{
+      const tTs=t.updatedAt||0;
+      return tTs>cloudTs && !(r.deletedIds||[]).map(String).includes(String(t.id));
+    });
 
-    // Merge trades: union by ID, remote wins on conflict, skip any deleted IDs
-    const byId={};
-    S.trades.forEach(t=>{if(t.id&&!allDeleted.has(String(t.id)))byId[String(t.id)]=t;});
-    (r.trades||[]).forEach(t=>{if(t.id&&!allDeleted.has(String(t.id)))byId[String(t.id)]=t;});
-    S.trades=Object.values(byId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    // CLOUD IS TRUTH — take cloud trades directly
+    const cloudTrades=(r.trades||[]).filter(t=>
+      !(r.deletedIds||[]).map(String).includes(String(t.id))
+    );
 
+    // Add unsynced local trades that aren't in cloud yet
+    const cloudIds=new Set(cloudTrades.map(t=>String(t.id)));
+    const toAdd=unsyncedLocal.filter(t=>!cloudIds.has(String(t.id)));
+
+    S.trades=[...cloudTrades,...toAdd].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    S.deletedIds=[...(r.deletedIds||[])];
+
+    // Everything else: cloud wins
     if(r.notes)S.notes=r.notes;
     if(r.deposits)S.deposits=r.deposits;
     if(r.accounts&&r.accounts.length>0){
@@ -4633,9 +4652,14 @@ async function loadUserData(){
     if(r.newsEvents)S.newsEvents=r.newsEvents;
     if(r.replayNotes)S.replayNotes=r.replayNotes;
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+
+    // If we have unsynced local trades, push them up immediately
+    if(toAdd.length>0) await saveToSupabase(true);
+
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
   }catch(e){console.warn('loadUserData:',e.message);}
 }
+
 
 async function manualSync(){
   const btn=document.getElementById('sync-btn');
