@@ -2640,7 +2640,7 @@ function saveTrade(){
   let outcome=document.getElementById('t-out').value;
   if(Math.abs(pnl)<=be&&pnl!==0)outcome='be';
   const t={
-    id:S._editIdx!=null?S.trades[S._editIdx].id:Date.now(),
+    id:S._editIdx!=null?S.trades[S._editIdx].id:(Date.now()+Math.random()).toString(36),
     account:S.cur,
     date:document.getElementById('t-date').value,
     title:document.getElementById('t-title').value,
@@ -4574,36 +4574,40 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
+    const{data,error}=await SB.from('yz_journal').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
     if(!data||!data.data)return;
     const r=data.data;
-    const remoteTradeCount=(r.trades||[]).length;
-    const localTradeCount=S.trades.length;
-    // Only load remote if it has MORE data than local — prevents empty cloud wiping local
-    if(remoteTradeCount===0&&localTradeCount>0){
-      // Cloud is empty but we have local data — push local up instead
-      console.log('Cloud empty, pushing local data up...');
-      await saveToSupabase(true);
-      return;
-    }
-    // Use whichever has more trades
-    if(remoteTradeCount>=localTradeCount){
-      if(r.trades)S.trades=r.trades;
-      if(r.notes)S.notes=r.notes;
-      if(r.deposits)S.deposits=r.deposits;
-      if(r.accounts)S.accounts=r.accounts;
-      if(r.cur)S.cur=r.cur;
-      if(r.accountMeta)S.accountMeta=r.accountMeta;
-      if(r.settings)S.settings={...S.settings,...r.settings};
-      if(r.envFields)S.envFields=r.envFields;
-      if(r.checklist)S.checklist={...S.checklist,...r.checklist};
-      if(r.filterPresets)S.filterPresets=r.filterPresets;
-      if(r.newsEvents)S.newsEvents=r.newsEvents;
-      if(r.replayNotes)S.replayNotes=r.replayNotes;
-      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-      try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
-    }
+
+    // ── MERGE trades by ID (never overwrite, always union) ──
+    const localById={};
+    S.trades.forEach(t=>{if(t.id)localById[t.id]=t;});
+    const remoteById={};
+    (r.trades||[]).forEach(t=>{if(t.id)remoteById[t.id]=t;});
+    // Union: take all unique IDs from both, remote wins on conflict
+    const merged=Object.values({...localById,...remoteById});
+    // Sort by date desc
+    merged.sort((a,b)=>new Date(b.date)-new Date(a.date)||(b.id-a.id));
+    S.trades=merged;
+
+    // ── Other data: use remote if it exists, keep local otherwise ──
+    if(r.notes&&r.notes.length>0)S.notes=r.notes;
+    if(r.deposits&&r.deposits.length>0)S.deposits=r.deposits;
+    if(r.accounts&&r.accounts.length>0){S.accounts=r.accounts;S.cur=r.cur||S.cur;}
+    if(r.accountMeta)S.accountMeta=r.accountMeta;
+    if(r.settings)S.settings={...S.settings,...r.settings};
+    if(r.envFields&&r.envFields.length>0)S.envFields=r.envFields;
+    if(r.checklist&&r.checklist.items&&r.checklist.items.length>0)S.checklist={...S.checklist,...r.checklist};
+    if(r.filterPresets&&r.filterPresets.length>0)S.filterPresets=r.filterPresets;
+    if(r.newsEvents&&r.newsEvents.length>0)S.newsEvents=r.newsEvents;
+    if(r.replayNotes&&Object.keys(r.replayNotes||{}).length>0)S.replayNotes=r.replayNotes;
+    if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+
+    // Save merged state locally
+    try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
+
+    // Push merged data back to cloud so both devices stay in sync
+    await saveToSupabase(true);
   }catch(e){console.warn('loadUserData catch:',e.message);}
 }
 
