@@ -1252,17 +1252,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
   <!-- TRADES -->
   <div id="page-trades" class="page">
-    <div class="flex aic jsb mb4">
-      <div class="flex gap2">
-        <input type="text" id="s-tr" placeholder="Search trades..." style="width:180px" oninput="renderTrades()">
-        <select id="f-out" onchange="renderTrades()" style="width:120px">
+    <div class="flex aic jsb mb3" style="flex-wrap:wrap;gap:8px">
+      <div class="flex gap2" style="flex-wrap:wrap;flex:1">
+        <input type="text" id="s-tr" placeholder="Search trades..." style="width:160px;flex:1;min-width:120px" oninput="renderTrades()">
+        <select id="f-out" onchange="renderTrades()" style="width:110px">
           <option value="">All Outcomes</option><option value="win">Wins</option><option value="loss">Losses</option><option value="be">Break Even</option>
         </select>
-        <select id="f-sess" onchange="renderTrades()" style="width:120px">
+        <select id="f-sess" onchange="renderTrades()" style="width:110px">
           <option value="">All Sessions</option>
           <option>NY-AM</option><option>NY-Lch</option><option>NY-PM</option><option>London</option><option>Asia</option>
         </select>
-        <select id="f-grade" onchange="renderTrades()" style="width:100px">
+        <select id="f-grade" onchange="renderTrades()" style="width:95px">
           <option value="">All Grades</option><option>A</option><option>B</option><option>C</option><option>D</option><option>F</option>
         </select>
       </div>
@@ -1271,19 +1271,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         <button class="btn btn-gold btn-sm" onclick="openTradeForm()">＋ Trade</button>
       </div>
     </div>
-    <div class="card">
-      <div class="tw">
-        <table>
-          <thead><tr>
-            <th>Date</th><th>Title</th><th>Ticker</th><th>P&L</th><th>R:R</th><th>Grade</th>
-            <th>Session</th><th>Duration</th><th>Outcome</th><th>PD Array</th><th>Target</th>
-            <th>SMT</th><th>Macro</th><th>Psych</th><th>Mistake</th><th></th>
-          </tr></thead>
-          <tbody id="trades-tbody"></tbody>
-        </table>
-        <div id="trades-empty" class="empty"><div class="empty-ic">📈</div><div class="empty-t">No trades yet</div><div class="empty-s">Click + Log Trade to start</div></div>
-      </div>
-    </div>
+    <div id="trades-cards" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div id="trades-empty" class="empty" style="display:none"><div class="empty-ic">📈</div><div class="empty-t">No trades yet</div><div class="empty-s">Click + Log Trade to start</div></div>
   </div>
 
   <!-- NOTEBOOK -->
@@ -2178,7 +2167,7 @@ function save(){
   }
   // Debounce Supabase cloud sync
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(saveToSupabase,800);
+  save._sbTimer=setTimeout(saveToSupabase,500);
 }
 function load(){
   try{
@@ -2639,7 +2628,7 @@ function copyLast(){const l=S.trades[S.trades.length-1];if(!l){toast('No trades'
 
 // ══════ TRADES PAGE ══════
 function renderTrades(){
-  const tbody=document.getElementById('trades-tbody');
+  const el=document.getElementById('trades-cards');
   const empty=document.getElementById('trades-empty');
   const q=(document.getElementById('s-tr').value||'').toLowerCase();
   const fOut=document.getElementById('f-out').value;
@@ -2652,27 +2641,62 @@ function renderTrades(){
     if(q&&![(t.ticker||''),(t.notes||''),(t.title||''),(t.pdArray||'')].some(s=>s.toLowerCase().includes(q)))return false;
     return true;
   });
-  if(!trades.length){tbody.innerHTML='';empty.style.display='block';return;}
+  if(!trades.length){el.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  tbody.innerHTML=[...trades].reverse().map(t=>`
-    <tr>
-      <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.date}</td>
-      <td style="font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${t.title||'—'}</td>
-      <td style="font-weight:700;color:var(--text)">${t.ticker}</td>
-      <td>${fmtP(parseFloat(t.pnl)||0)}</td>
-      <td style="font-family:var(--fm);color:var(--text2)">${t.rr?t.rr+'R':'—'}</td>
-      <td><span class="grade ${gradeClass(t.grade)}">${t.grade||'—'}</span></td>
-      <td style="font-size:10px;color:var(--text2)">${t.session||'—'}</td>
-      <td style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.duration||'—'}</td>
-      <td><span class="tag ${t.outcome==='win'?'tw2':t.outcome==='loss'?'tl2':'tb2'}">${t.outcome.toUpperCase()}</span></td>
-      <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.pdArray||'—'}</td>
-      <td style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.target||'—'}</td>
-      <td style="font-family:var(--fm);font-size:10px;color:${getEnv(t,'SMT?')==='Yes'?'var(--green)':getEnv(t,'SMT?')==='No'?'var(--red)':'var(--text3)'}">${getEnv(t,'SMT?')}</td>
-      <td style="font-family:var(--fm);font-size:10px">${getEnv(t,'Macro')}</td>
-      <td style="font-family:var(--fm);font-size:10px;color:${t.psychRating>=7?'var(--green)':t.psychRating<=4?'var(--red)':'var(--text2)'}">${t.psychRating||'—'}/10</td>
-      <td style="font-size:10px;color:var(--red)">${t.mistake||'—'}</td>
-      <td><button class="btn btn-red btn-sm" style="padding:3px 6px;font-size:9px" onclick="delTrade(${S.trades.indexOf(t)})">✕</button></td>
-    </tr>`).join('');
+  const outcomeColor=o=>o==='win'?'var(--green)':o==='loss'?'var(--red)':'var(--blue)';
+  const outcomeGlow=o=>o==='win'?'var(--green-glow)':o==='loss'?'var(--red-glow)':'var(--blue-dim)';
+  el.innerHTML=[...trades].reverse().map((t,idx)=>{
+    const pnl=parseFloat(t.pnl)||0;
+    const isWin=t.outcome==='win';
+    const isLoss=t.outcome==='loss';
+    const realIdx=S.trades.indexOf(t);
+    const img=t.images&&t.images.length?t.images[0]:null;
+    const tags=[
+      t.duration?`<span class="tag" style="background:var(--g2);color:var(--text3)">⏱ ${t.duration}</span>`:'',
+      t.pdArray?`<span class="tag" style="background:var(--gold-dim);color:var(--gold)">${t.pdArray}</span>`:'',
+      t.emotion?`<span class="tag" style="background:var(--blue-dim);color:var(--blue)">${t.emotion}</span>`:'',
+      t.htfBias?`<span class="tag" style="background:var(--g2);color:var(--text3)">${t.htfBias}</span>`:'',
+      t.mistake?`<span class="tag" style="background:var(--red-dim);color:var(--red)">${t.mistake}</span>`:'',
+    ].filter(Boolean).join('');
+    return `<div class="card" style="padding:0;overflow:hidden;border-color:${outcomeColor(t.outcome)}22;transition:border-color .15s">
+      ${img?`<div style="width:100%;height:160px;overflow:hidden;position:relative">
+        <img src="${img}" style="width:100%;height:100%;object-fit:cover;display:block">
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(6,8,16,0.9))"></div>
+      </div>`:''}
+      <div style="padding:16px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-family:var(--fd);font-size:20px;color:var(--text);letter-spacing:.02em">${t.ticker||'—'}</div>
+            <div style="font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:2px">${t.date}${t.session?' · '+t.session:''}</div>
+            ${t.title?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${t.title}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span style="font-family:var(--fd);font-size:13px;color:var(--text3);letter-spacing:.06em">${t.grade||'—'}</span>
+            <span style="font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.1em;color:${outcomeColor(t.outcome)};background:${outcomeColor(t.outcome)}22;padding:3px 10px;border-radius:20px;border:1px solid ${outcomeColor(t.outcome)}44">${(t.outcome||'').toUpperCase()}</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
+            <div style="font-family:var(--fd);font-size:16px;font-weight:600;color:'+((pnl>=0)?'var(--green)':'var(--red)')+'">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">P&L</div>
+          </div>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
+            <div style="font-family:var(--fd);font-size:16px;color:var(--blue)">${t.rr?t.rr+'R':'—'}</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">R:R</div>
+          </div>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
+            <div style="font-family:var(--fd);font-size:16px;color:${(t.psychRating||0)>=7?'var(--green)':(t.psychRating||0)>=5?'#eab308':'var(--red)'}">${t.psychRating||'—'}</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">PSYCH</div>
+          </div>
+        </div>
+        ${tags?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${tags}</div>`:''}
+        ${t.notes?`<div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;font-style:italic">${t.notes}</div>`:''}
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-red btn-sm" style="font-size:10px;padding:4px 12px" onclick="delTrade(${realIdx})">✕ Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
 
@@ -4178,18 +4202,18 @@ async function checkSession(){
     document.getElementById('auth-screen').classList.remove('hidden');
     const{data:{session}}=await SB.auth.getSession();
     if(session){
-      // Already logged in — skip auth screen completely
       currentUser=session.user;
       await loadUserData();
       enterApp();
+      startRealtimeSync();
       return;
     }
-    // Listen for OAuth redirects and new sign-ins
     SB.auth.onAuthStateChange(async(event,session)=>{
       if(event==='SIGNED_IN'&&session){
         currentUser=session.user;
         await loadUserData();
         enterApp();
+        startRealtimeSync();
       }
       if(event==='SIGNED_OUT'){
         currentUser=null;
@@ -4197,6 +4221,70 @@ async function checkSession(){
       }
     });
   }catch(e){console.error('Session check error:',e);}
+}
+
+function startRealtimeSync(){
+  if(!SB||!currentUser||currentUser.id==='demo')return;
+
+  // ── 1. Realtime subscription — push from Supabase when row changes
+  SB.channel('yz-sync')
+    .on('postgres_changes',{
+      event:'UPDATE',
+      schema:'public',
+      table:'yz_journal',
+      filter:`user_id=eq.${currentUser.id}`
+    },async(payload)=>{
+      // Another device saved — pull fresh data
+      const remote=payload.new?.data;
+      if(!remote)return;
+      if(remote.trades)S.trades=remote.trades;
+      if(remote.notes)S.notes=remote.notes;
+      if(remote.deposits)S.deposits=remote.deposits;
+      if(remote.accounts)S.accounts=remote.accounts;
+      if(remote.cur)S.cur=remote.cur;
+      if(remote.accountMeta)S.accountMeta=remote.accountMeta;
+      if(remote.settings)S.settings={...S.settings,...remote.settings};
+      if(remote.envFields)S.envFields=remote.envFields;
+      if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
+      if(remote.filterPresets)S.filterPresets=remote.filterPresets;
+      if(remote.newsEvents)S.newsEvents=remote.newsEvents;
+      if(remote.replayNotes)S.replayNotes=remote.replayNotes;
+      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+      try{localStorage.setItem('yz4',JSON.stringify(S));}catch(e){}
+      rCalendar();
+      toast('☁️ Synced from another device');
+    })
+    .subscribe();
+
+  // ── 2. Pull fresh data when tab becomes visible again
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible'&&SB&&currentUser){
+      await loadUserData();
+      rCalendar();
+    }
+  });
+
+  // ── 3. Save before tab closes
+  window.addEventListener('beforeunload',()=>{
+    if(SB&&currentUser&&currentUser.id!=='demo'){
+      // Use sendBeacon for reliable pre-close save
+      const payload=JSON.stringify({
+        user_id:currentUser.id,
+        user_email:currentUser.email,
+        user_name:currentUser.user_metadata?.full_name||currentUser.email,
+        data:{
+          trades:S.trades,notes:S.notes,deposits:S.deposits,
+          cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
+          settings:S.settings,envFields:S.envFields,
+          checklist:S.checklist,filterPresets:S.filterPresets,
+          newsEvents:S.newsEvents,replayNotes:S.replayNotes
+        },
+        updated_at:new Date().toISOString()
+      });
+      // Best-effort sync on close
+      saveToSupabase();
+    }
+  });
 }
 
 async function continueSession(){
