@@ -612,10 +612,20 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 .img-drop{border:1px dashed rgba(255,255,255,.15);border-radius:var(--r);padding:18px;text-align:center;color:var(--text3);font-size:11px;cursor:pointer;transition:all .2s;margin-bottom:10px}
 .img-drop:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
 
-/* psych dots */
-.pr-dot{width:28px;height:28px;border-radius:50%;border:1px solid var(--bdr);background:var(--g1);display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:all .2s;font-family:var(--fm);color:var(--text3)}
-.pr-dot:hover{border-color:var(--gold)}
-.pr-dot.active{background:var(--gold);border-color:var(--gold);color:var(--bg);box-shadow:0 0 10px var(--gold-glow)}
+/* ── COMPACT RATING ROWS ── */
+.rating-row{display:flex;flex-direction:column;gap:6px}
+.rating-meta{display:flex;align-items:center;justify-content:space-between}
+.rating-lbl{font-family:var(--fm);font-size:9px;letter-spacing:.18em;color:var(--text3);text-transform:uppercase}
+.rating-val{font-family:var(--fd);font-size:16px;line-height:1;transition:color .2s}
+.rating-dots{display:flex;gap:4px}
+.rating-dot{
+  flex:1;height:6px;border-radius:3px;cursor:pointer;
+  background:var(--g2);border:none;
+  transition:background .15s,box-shadow .15s,transform .1s;
+}
+.rating-dot:hover{transform:scaleY(1.5)}
+.rating-dot.active-mental{background:var(--green);box-shadow:0 0 6px var(--green-glow)}
+.rating-dot.active-tech{background:var(--gold);box-shadow:0 0 6px var(--gold-glow)}
 
 /* ══ MOBILE RESPONSIVE ══ */
 .hamburger{display:none}
@@ -1930,32 +1940,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       </div>
       <div id="psy-b">
         <!-- Mental Rating -->
-        <div class="fg mb4">
-          <label style="margin-bottom:8px;display:block">Pre-Trade Mental Rating</label>
-          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">MENTAL STATE</span>
-              <span id="pr-label" style="font-family:var(--fd);font-size:18px;color:var(--green);text-shadow:0 0 10px var(--green-glow)">7</span>
-            </div>
-            <div style="display:flex;gap:5px;justify-content:space-between" id="pr-dots"></div>
-            <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--fm);font-size:8px;color:var(--text3)">
-              <span>Tilted</span><span>Neutral</span><span>Optimal</span>
-            </div>
+        <div class="rating-row mb3">
+          <div class="rating-meta">
+            <span class="rating-lbl">Mental</span>
+            <span id="pr-label" class="rating-val">7</span>
           </div>
+          <div class="rating-dots" id="pr-dots"></div>
         </div>
         <!-- Technical Rating -->
-        <div class="fg mb4">
-          <label style="margin-bottom:8px;display:block">Technical Confluence Rating</label>
-          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <span style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.12em">SETUP QUALITY</span>
-              <span id="tr-label" style="font-family:var(--fd);font-size:18px;color:var(--gold);text-shadow:0 0 10px var(--gold-glow)">5</span>
-            </div>
-            <div style="display:flex;gap:5px;justify-content:space-between" id="tr-dots"></div>
-            <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--fm);font-size:8px;color:var(--text3)">
-              <span>Weak</span><span>Decent</span><span>A+ Setup</span>
-            </div>
+        <div class="rating-row mb3">
+          <div class="rating-meta">
+            <span class="rating-lbl">Technicals</span>
+            <span id="tr-label" class="rating-val" style="color:var(--gold)">5</span>
           </div>
+          <div class="rating-dots" id="tr-dots"></div>
         </div>
         <!-- Emotion -->
         <div class="fg">
@@ -2411,61 +2409,34 @@ function openTradeForm(ds=''){
   buildPR();buildTR();buildEnvForm();openM('tmodal');
 }
 function buildPR(){
-  const dots=document.getElementById('pr-dots');
+  const el=document.getElementById('pr-dots');
   const lbl=document.getElementById('pr-label');
-  if(!dots)return;
-  const colors=['var(--red)','var(--red)','var(--orange)','var(--orange)','#eab308','#eab308','var(--green)','var(--green)','var(--green)','var(--green)'];
-  const glows=['var(--red-glow)','var(--red-glow)','rgba(251,146,60,.4)','rgba(251,146,60,.4)','rgba(234,179,8,.4)','rgba(234,179,8,.4)','var(--green-glow)','var(--green-glow)','var(--green-glow)','var(--green-glow)'];
-  dots.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`
-    <div onclick="setPR(${n})" style="
-      flex:1;height:32px;border-radius:6px;cursor:pointer;
-      background:${n<=S.psychRating?colors[n-1]:'var(--g2)'};
-      border:1px solid ${n<=S.psychRating?colors[n-1]:'var(--bdr)'};
-      box-shadow:${n<=S.psychRating?'0 0 8px '+glows[n-1]:'none'};
-      transition:all .15s;display:flex;align-items:center;justify-content:center;
-      font-family:var(--fm);font-size:9px;
-      color:${n<=S.psychRating?'rgba(255,255,255,0.9)':'var(--text3)'};
-    ">${n}</div>`).join('');
+  if(!el)return;
+  el.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<div class="rating-dot${n<=S.psychRating?' active-mental':''}" onclick="setPR(${n})" title="${n}"></div>`).join('');
   if(lbl){
     const r=S.psychRating;
-    lbl.textContent=r+'/10';
+    const tag=r>=8?'Optimal':r>=6?'Good':r>=4?'Neutral':'Tilted';
+    lbl.textContent=r+' · '+tag;
     lbl.style.color=r>=7?'var(--green)':r>=5?'#eab308':'var(--red)';
-    lbl.style.textShadow=r>=7?'0 0 10px var(--green-glow)':r>=5?'0 0 10px rgba(234,179,8,.4)':'0 0 10px var(--red-glow)';
+    lbl.style.textShadow=r>=7?'0 0 8px var(--green-glow)':r>=5?'0 0 8px rgba(234,179,8,.4)':'0 0 8px var(--red-glow)';
   }
 }
-function setPR(n){
-  S.psychRating=n;
-  buildPR();
-}
+function setPR(n){S.psychRating=n;buildPR();}
 
 function buildTR(){
-  const dots=document.getElementById('tr-dots');
+  const el=document.getElementById('tr-dots');
   const lbl=document.getElementById('tr-label');
-  if(!dots)return;
-  const colors=['var(--red)','var(--red)','var(--orange)','var(--orange)','#eab308','var(--gold)','var(--gold)','var(--gold)','var(--green)','var(--green)'];
-  const glows=['var(--red-glow)','var(--red-glow)','rgba(251,146,60,.4)','rgba(251,146,60,.4)','rgba(234,179,8,.4)','var(--gold-glow)','var(--gold-glow)','var(--gold-glow)','var(--green-glow)','var(--green-glow)'];
-  dots.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`
-    <div onclick="setTR(${n})" style="
-      flex:1;height:32px;border-radius:6px;cursor:pointer;
-      background:${n<=S.techRating?colors[n-1]:'var(--g2)'};
-      border:1px solid ${n<=S.techRating?colors[n-1]:'var(--bdr)'};
-      box-shadow:${n<=S.techRating?'0 0 8px '+glows[n-1]:'none'};
-      transition:all .15s;display:flex;align-items:center;justify-content:center;
-      font-family:var(--fm);font-size:9px;
-      color:${n<=S.techRating?'rgba(255,255,255,0.9)':'var(--text3)'};
-    ">${n}</div>`).join('');
+  if(!el)return;
+  el.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<div class="rating-dot${n<=S.techRating?' active-tech':''}" onclick="setTR(${n})" title="${n}"></div>`).join('');
   if(lbl){
     const r=S.techRating;
-    const label=r>=9?'A+ Setup':r>=7?'Strong':r>=5?'Decent':r>=3?'Weak':'Poor';
-    lbl.textContent=r+'/10';
+    const tag=r>=9?'A+ Setup':r>=7?'Strong':r>=5?'Decent':r>=3?'Weak':'Poor';
+    lbl.textContent=r+' · '+tag;
     lbl.style.color=r>=7?'var(--gold)':r>=5?'#eab308':'var(--red)';
-    lbl.style.textShadow=r>=7?'0 0 10px var(--gold-glow)':r>=5?'0 0 10px rgba(234,179,8,.4)':'0 0 10px var(--red-glow)';
+    lbl.style.textShadow=r>=7?'0 0 8px var(--gold-glow)':r>=5?'0 0 8px rgba(234,179,8,.4)':'0 0 8px var(--red-glow)';
   }
 }
-function setTR(n){
-  S.techRating=n;
-  buildTR();
-}
+function setTR(n){S.techRating=n;buildTR();}
 
 function selectTicker(el){
   document.querySelectorAll('#ticker-pills .ticker-pill').forEach(p=>p.classList.remove('active'));
