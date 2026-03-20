@@ -1866,19 +1866,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
       </div>
 
-      <!-- Time row — 3 equal columns, text input -->
+      <!-- Time row — 3 equal columns -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="fg">
           <label>Entry Time</label>
-          <input type="text" id="t-et" placeholder="e.g. 09:30" maxlength="5" inputmode="numeric" oninput="autoColon(this);calcDur()" style="margin-top:4px;font-family:var(--fm)">
+          <input type="text" id="t-et" placeholder="09:30" maxlength="5" inputmode="numeric" oninput="autoColon(this);calcDur()" style="margin-top:4px;font-family:var(--fm);letter-spacing:.04em">
         </div>
         <div class="fg">
           <label>Exit Time</label>
-          <input type="text" id="t-xt" placeholder="e.g. 14:45" maxlength="5" inputmode="numeric" oninput="autoColon(this);calcDur()" style="margin-top:4px;font-family:var(--fm)">
+          <input type="text" id="t-xt" placeholder="14:45" maxlength="5" inputmode="numeric" oninput="autoColon(this);calcDur()" style="margin-top:4px;font-family:var(--fm);letter-spacing:.04em">
         </div>
         <div class="fg">
           <label>Duration</label>
-          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 11px;font-family:var(--fm);font-size:12px;color:var(--text3);height:37px;display:flex;align-items:center;font-style:italic">Auto-calculated</div>
+          <input type="text" id="t-dur-display" placeholder="Auto" readonly style="margin-top:4px;font-family:var(--fm);color:var(--text3);cursor:default">
           <input type="hidden" id="t-dur">
         </div>
       </div>
@@ -2411,7 +2411,7 @@ function openTradeForm(ds=''){
   document.getElementById('t-xt').value='';
   document.getElementById('t-dur').value='';
   const durDisp=document.getElementById('t-dur-display');
-  if(durDisp){durDisp.textContent='Auto-calculated';durDisp.style.color='var(--text3)';durDisp.style.fontStyle='italic';}
+  if(durDisp){durDisp.value='';durDisp.style.color='var(--text3)';}
   document.getElementById('t-mistake').value='';
   document.getElementById('t-bias').value='';
   document.getElementById('t-style').value='';
@@ -2533,10 +2533,10 @@ function calcDur(){
     let min=(xh*60+xm)-(eh*60+em);if(min<0)min+=1440;
     const dur=min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`;
     document.getElementById('t-dur').value=dur;
-    if(disp){disp.textContent=dur;disp.style.color='var(--green)';disp.style.fontStyle='normal';}
+    if(disp){disp.value=dur;disp.style.color='var(--green)';}
   } else {
     document.getElementById('t-dur').value='';
-    if(disp){disp.textContent='Auto-calculated';disp.style.color='var(--text3)';disp.style.fontStyle='italic';}
+    if(disp){disp.value='';disp.style.color='var(--text3)';}
   }
 }
 function handleImgs(inp){
