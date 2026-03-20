@@ -2045,9 +2045,30 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <!-- ACCOUNT MODAL -->
 <div class="overlay" id="amodal">
-<div class="modal" style="width:380px">
+<div class="modal" style="width:400px">
   <div class="mh"><div class="mt" id="am-t">Add Account</div><div class="mc" onclick="closeM('amodal')">✕</div></div>
-  <div class="mb"><div class="fg"><label>Account Name</label><input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..."></div></div>
+  <div class="mb">
+    <div class="fg mb3">
+      <label>Account Name</label>
+      <input id="am-n" placeholder="e.g. 50K Lucid, 100K Apex..." style="margin-top:4px">
+    </div>
+    <div class="fg mb3" id="am-type-row">
+      <label>Account Type</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+        <div id="am-type-cash" onclick="selectAcctType('cash')" style="padding:10px;border-radius:var(--r);border:1px solid var(--gold);background:var(--gold-dim);color:var(--gold);font-family:var(--fm);font-size:11px;text-align:center;cursor:pointer;transition:all .15s">Personal Cash</div>
+        <div id="am-type-prop" onclick="selectAcctType('prop')" style="padding:10px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--g1);color:var(--text3);font-family:var(--fm);font-size:11px;text-align:center;cursor:pointer;transition:all .15s">Funded / Prop Firm</div>
+      </div>
+      <input type="hidden" id="am-type" value="cash">
+    </div>
+    <div class="fg mb3" id="am-balance-row">
+      <label id="am-balance-lbl">Initial Balance</label>
+      <div style="position:relative;margin-top:4px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-family:var(--fm)">$</span>
+        <input type="number" id="am-balance" placeholder="0.00" step="0.01" style="padding-left:26px">
+      </div>
+      <div id="am-balance-hint" style="font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:5px">Total amount of money in the account.</div>
+    </div>
+  </div>
   <div class="mf">
     <button class="btn btn-glass btn-sm" onclick="closeM('amodal')">Cancel</button>
     <button class="btn btn-gold" onclick="saveAcct()">Save</button>
@@ -2306,13 +2327,51 @@ function toggleAcct(){
   },50);
 }
 function switchAcct(a){S.cur=a;document.getElementById('ac-name').textContent=a;document.getElementById('ac-drop').classList.remove('open');save();toast('→ '+a);rCalendar();}
-function openAddAcct(){document.getElementById('am-t').textContent='Add Account';document.getElementById('am-n').value='';document.getElementById('amodal').dataset.mode='add';openM('amodal');}
-function renameAcct(){document.getElementById('am-t').textContent='Rename';document.getElementById('am-n').value=S.cur;document.getElementById('amodal').dataset.mode='rename';openM('amodal');}
+function selectAcctType(type){
+  document.getElementById('am-type').value=type;
+  const cash=document.getElementById('am-type-cash');
+  const prop=document.getElementById('am-type-prop');
+  const lbl=document.getElementById('am-balance-lbl');
+  const hint=document.getElementById('am-balance-hint');
+  if(type==='cash'){
+    cash.style.borderColor='var(--gold)';cash.style.background='var(--gold-dim)';cash.style.color='var(--gold)';
+    prop.style.borderColor='var(--bdr)';prop.style.background='var(--g1)';prop.style.color='var(--text3)';
+    lbl.textContent='Initial Balance';
+    hint.innerHTML='Total amount of money in the account.';
+    hint.style.color='var(--text3)';
+  } else {
+    prop.style.borderColor='var(--blue)';prop.style.background='var(--blue-dim)';prop.style.color='var(--blue)';
+    cash.style.borderColor='var(--bdr)';cash.style.background='var(--g1)';cash.style.color='var(--text3)';
+    lbl.textContent='Max Drawdown Limit (Real Balance)';
+    hint.innerHTML='⚠ Do NOT enter $50k or $100k. Enter your Max Loss limit only (e.g. if you have a $50K account with $2,000 drawdown, enter 2000). This ensures your risk math is calculated correctly.';
+    hint.style.color='var(--orange)';
+  }
+}
+function openAddAcct(){
+  document.getElementById('am-t').textContent='Add Account';
+  document.getElementById('am-n').value='';
+  document.getElementById('am-balance').value='';
+  document.getElementById('amodal').dataset.mode='add';
+  selectAcctType('cash');
+  openM('amodal');
+}
+function renameAcct(){document.getElementById('am-t').textContent='Rename';document.getElementById('am-n').value=S.cur;document.getElementById('am-type-row').style.display='none';document.getElementById('am-balance-row').style.display='none';document.getElementById('amodal').dataset.mode='rename';openM('amodal');}
 function saveAcct(){
   const n=document.getElementById('am-n').value.trim();if(!n){toast('⚠ Name required');return;}
   const isFirst=S.accounts.length===0;
-  if(document.getElementById('amodal').dataset.mode==='add'){S.accounts.push(n);S.cur=n;}
-  else{const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;}
+  const type=document.getElementById('am-type')?.value||'cash';
+  const balance=parseFloat(document.getElementById('am-balance')?.value)||0;
+  if(document.getElementById('amodal').dataset.mode==='add'){
+    S.accounts.push(n);S.cur=n;
+    // Store account metadata
+    if(!S.accountMeta)S.accountMeta={};
+    S.accountMeta[n]={type,balance};
+  } else {
+    const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;
+  }
+  // Reset type row visibility for next open
+  const tr=document.getElementById('am-type-row');const br=document.getElementById('am-balance-row');
+  if(tr)tr.style.display='';if(br)br.style.display='';
   document.getElementById('ac-name').textContent=S.cur;
   save();closeM('amodal');
   if(isFirst){rCalendar();toast('Account created ✓ — start logging trades!');}
@@ -4199,17 +4258,19 @@ async function loadUserData(){
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
     if(data&&data.data&&Object.keys(data.data).length>0){
       const remote=data.data;
-      // Merge remote data into S
       if(remote.trades)S.trades=remote.trades;
       if(remote.notes)S.notes=remote.notes;
       if(remote.deposits)S.deposits=remote.deposits;
       if(remote.accounts)S.accounts=remote.accounts;
+      if(remote.cur)S.cur=remote.cur;
       if(remote.settings)S.settings={...S.settings,...remote.settings};
       if(remote.envFields)S.envFields=remote.envFields;
       if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
       if(remote.filterPresets)S.filterPresets=remote.filterPresets;
       if(remote.newsEvents)S.newsEvents=remote.newsEvents;
       if(remote.replayNotes)S.replayNotes=remote.replayNotes;
+      // Validate cur
+      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
     }
   }catch(e){console.log('No existing data, starting fresh');}
 }
@@ -4243,7 +4304,7 @@ async function saveToSupabase(){
       user_name:currentUser.user_metadata?.full_name||currentUser.email,
       data:{
         trades:S.trades,notes:S.notes,deposits:S.deposits,
-        accounts:S.accounts,settings:S.settings,envFields:S.envFields,
+        cur:S.cur,accounts:S.accounts,settings:S.settings,envFields:S.envFields,
         checklist:S.checklist,filterPresets:S.filterPresets,
         newsEvents:S.newsEvents,replayNotes:S.replayNotes
       },
