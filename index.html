@@ -642,7 +642,7 @@ textarea{resize:vertical;min-height:78px;line-height:1.6}
 
 @media(max-width:768px){
   input,select,textarea{font-size:16px!important}
-  input[type="time"]{font-size:13px!important;padding:8px 4px!important;letter-spacing:-.3px}
+  input[type="time"]{font-size:12px!important;padding:8px 2px!important}
   .fg{min-width:0}
   body{flex-direction:column}
   .sidebar{
@@ -1867,35 +1867,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
       </div>
 
-      <!-- Time row — custom selects, no iOS AM/PM -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
-        <div class="fg">
-          <label>Entry</label>
-          <select id="t-et-h" onchange="calcDur()" style="margin-top:4px;padding:8px 4px">
-            <option value="">HH</option>
-            <option>00</option><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option>
-          </select>
-          <select id="t-et-m" onchange="calcDur()" style="margin-top:4px;padding:8px 4px">
-            <option value="">MM</option>
-            <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
-          </select>
-          <input type="hidden" id="t-et">
-        </div>
-        <div class="fg">
-          <label>Exit</label>
-          <select id="t-xt-h" onchange="calcDur()" style="margin-top:4px;padding:8px 4px">
-            <option value="">HH</option>
-            <option>00</option><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option>
-          </select>
-          <select id="t-xt-m" onchange="calcDur()" style="margin-top:4px;padding:8px 4px">
-            <option value="">MM</option>
-            <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
-          </select>
-          <input type="hidden" id="t-xt">
+      <!-- Time row — Entry + Exit stacked left, Duration right -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="fg">
+            <label>Entry</label>
+            <input type="time" id="t-et" oninput="calcDur()" style="margin-top:4px">
+          </div>
+          <div class="fg">
+            <label>Exit</label>
+            <input type="time" id="t-xt" oninput="calcDur()" style="margin-top:4px">
+          </div>
         </div>
         <div class="fg">
           <label>Duration</label>
-          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 8px;font-family:var(--fm);font-size:12px;color:var(--text3);height:37px;display:flex;align-items:center">—</div>
+          <div id="t-dur-display" style="margin-top:4px;background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px 10px;font-family:var(--fm);font-size:13px;color:var(--text3);height:37px;display:flex;align-items:center">—</div>
           <input type="hidden" id="t-dur">
         </div>
       </div>
@@ -2424,7 +2410,6 @@ function openTradeForm(ds=''){
     const el=document.getElementById(id);if(el){el.value='';el.style.color='';el.style.borderColor='';}
   });
   // Reset time selects
-  ['t-et-h','t-et-m','t-xt-h','t-xt-m'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
   document.getElementById('t-et').value='';
   document.getElementById('t-xt').value='';
   document.getElementById('t-dur').value='';
@@ -2535,17 +2520,13 @@ function setYNA(fi,val){
 }
 function toggleSec(id,aid){const el=document.getElementById(id);const h=el.style.display==='none';el.style.display=h?'':'none';const a=document.getElementById(aid);if(a)a.textContent=h?'▲':'▼';}
 function calcDur(){
-  const eth=document.getElementById('t-et-h')?.value;
-  const etm=document.getElementById('t-et-m')?.value;
-  const xth=document.getElementById('t-xt-h')?.value;
-  const xtm=document.getElementById('t-xt-m')?.value;
-  // Build hidden time values
-  if(eth&&etm) document.getElementById('t-et').value=eth+':'+etm;
-  if(xth&&xtm) document.getElementById('t-xt').value=xth+':'+xtm;
+  const et=document.getElementById('t-et').value;
+  const xt=document.getElementById('t-xt').value;
   const disp=document.getElementById('t-dur-display');
-  if(eth&&etm&&xth&&xtm){
-    let min=(parseInt(xth)*60+parseInt(xtm))-(parseInt(eth)*60+parseInt(etm));
-    if(min<0)min+=1440;
+  if(et&&xt){
+    const[eh,em]=et.split(':').map(Number);
+    const[xh,xm]=xt.split(':').map(Number);
+    let min=(xh*60+xm)-(eh*60+em);if(min<0)min+=1440;
     const dur=min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`;
     document.getElementById('t-dur').value=dur;
     if(disp){disp.textContent=dur;disp.style.color='var(--green)';}
