@@ -4458,65 +4458,73 @@ async function checkSession(){
 function startRealtimeSync(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
 
-  // ── 1. Realtime subscription — push from Supabase when row changes
-  SB.channel('yz-sync')
+  // Remove any existing channel first
+  try{SB.removeAllChannels();}catch(e){}
+
+  // ── Realtime: instant push when another device saves ──
+  SB.channel('yz-journal-changes')
     .on('postgres_changes',{
-      event:'UPDATE',
+      event:'*',
       schema:'public',
       table:'yz_journal',
       filter:`user_id=eq.${currentUser.id}`
     },async(payload)=>{
-      // Another device saved — pull fresh data
       const remote=payload.new?.data;
       if(!remote)return;
-      if(remote.trades)S.trades=remote.trades;
+      // Merge trades properly (same as loadUserData)
+      const localById={};
+      S.trades.forEach(t=>{if(t.id)localById[String(t.id)]=t;});
+      const remoteById={};
+      (remote.trades||[]).forEach(t=>{if(t.id)remoteById[String(t.id)]=t;});
+      const allIds=new Set([...Object.keys(localById),...Object.keys(remoteById)]);
+      const merged=[];
+      allIds.forEach(id=>{
+        const local=localById[id];
+        const rem=remoteById[id];
+        if(local&&rem){merged.push((local.updatedAt||0)>=(rem.updatedAt||0)?local:rem);}
+        else if(rem){merged.push(rem);}
+        else if(local){merged.push(local);}
+      });
+      merged.sort((a,b)=>new Date(b.date)-new Date(a.date));
+      S.trades=merged;
       if(remote.notes)S.notes=remote.notes;
       if(remote.deposits)S.deposits=remote.deposits;
-      if(remote.accounts)S.accounts=remote.accounts;
-      if(remote.cur)S.cur=remote.cur;
-      if(remote.accountMeta)S.accountMeta=remote.accountMeta;
+      if(remote.accounts&&remote.accounts.length>0){
+        S.accounts=remote.accounts;
+        if(remote.cur&&remote.accounts.includes(remote.cur))S.cur=remote.cur;
+      }
       if(remote.settings)S.settings={...S.settings,...remote.settings};
       if(remote.envFields)S.envFields=remote.envFields;
-      if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
-      if(remote.filterPresets)S.filterPresets=remote.filterPresets;
-      if(remote.newsEvents)S.newsEvents=remote.newsEvents;
-      if(remote.replayNotes)S.replayNotes=remote.replayNotes;
-      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
       try{localStorage.setItem('yz4',JSON.stringify(S));}catch(e){}
-      rCalendar();
-      toast('☁️ Synced from another device');
+      // Re-render current page instantly
+      refreshCurrentPage();
+      toast('☁️ Live sync');
     })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('Realtime status:',status);
+    });
 
-  // ── 2. Pull fresh data when tab becomes visible again
+  // ── Pull on tab focus (catch anything missed) ──
   document.addEventListener('visibilitychange',async()=>{
     if(document.visibilityState==='visible'&&SB&&currentUser){
       await loadUserData();
-      rCalendar();
+      refreshCurrentPage();
     }
   });
 
-  // ── 3. Save before tab closes
+  // ── Save before tab closes ──
   window.addEventListener('beforeunload',()=>{
-    if(SB&&currentUser&&currentUser.id!=='demo'){
-      // Use sendBeacon for reliable pre-close save
-      const payload=JSON.stringify({
-        user_id:currentUser.id,
-        user_email:currentUser.email,
-        user_name:currentUser.user_metadata?.full_name||currentUser.email,
-        data:{
-          trades:S.trades,notes:S.notes,deposits:S.deposits,
-          cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
-          settings:S.settings,envFields:S.envFields,
-          checklist:S.checklist,filterPresets:S.filterPresets,
-          newsEvents:S.newsEvents,replayNotes:S.replayNotes
-        },
-        updated_at:new Date().toISOString()
-      });
-      // Best-effort sync on close
-      saveToSupabase();
-    }
+    if(SB&&currentUser&&currentUser.id!=='demo') saveToSupabase(true);
   });
+}
+
+function refreshCurrentPage(){
+  const active=document.querySelector('.page.active');
+  if(!active)return;
+  const id=active.id.replace('page-','');
+  rp(id);
+  const acName=document.getElementById('ac-name');
+  if(acName)acName.textContent=S.cur||'';
 }
 
 async function continueSession(){
@@ -4657,7 +4665,7 @@ async function manualSync(){
   if(btn){btn.textContent='⟳';btn.style.color='var(--gold)';}
   await saveToSupabase(false);
   await loadUserData();
-  rCalendar();
+  refreshCurrentPage();
   if(btn){
     btn.textContent='✓';btn.style.color='var(--green)';
     setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
