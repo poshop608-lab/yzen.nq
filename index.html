@@ -4567,7 +4567,6 @@ async function manualSync(){
 }
 async function saveToSupabase(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
-  // Show glowing sync overlay
   const overlay=document.getElementById('cloud-sync-overlay');
   const card=document.getElementById('cloud-sync-card');
   const title=document.getElementById('cloud-sync-title');
@@ -4578,48 +4577,59 @@ async function saveToSupabase(){
     if(title){title.textContent='SYNCING';title.style.color='var(--green)';title.style.textShadow='0 0 12px rgba(34,211,160,0.5)';}
     if(sub)sub.textContent='SAVING TO CLOUD';
   }
+  const data={
+    trades:S.trades,notes:S.notes,deposits:S.deposits,
+    cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
+    settings:S.settings,envFields:S.envFields,
+    checklist:S.checklist,filterPresets:S.filterPresets,
+    newsEvents:S.newsEvents,replayNotes:S.replayNotes
+  };
   try{
-    const payload={
-      user_id:currentUser.id,
-      user_email:currentUser.email,
-      user_name:currentUser.user_metadata?.full_name||currentUser.email,
-      data:{
-        trades:S.trades,notes:S.notes,deposits:S.deposits,
-        cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
-        settings:S.settings,envFields:S.envFields,
-        checklist:S.checklist,filterPresets:S.filterPresets,
-        newsEvents:S.newsEvents,replayNotes:S.replayNotes
-      },
-      updated_at:new Date().toISOString()
-    };
-    const{error:upsertError}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
-    if(upsertError){
-      toast('⚠ DB Error: '+upsertError.message);
-      throw upsertError;
+    // Try UPDATE first (works if row exists)
+    let{error:updateErr}=await SB.from('yz_journal')
+      .update({data,updated_at:new Date().toISOString(),user_email:currentUser.email,user_name:currentUser.user_metadata?.full_name||currentUser.email})
+      .eq('user_id',currentUser.id);
+    // If no row existed, INSERT
+    if(updateErr&&updateErr.code==='PGRST116'||!updateErr){
+      // check if actually updated
+      const{count}=await SB.from('yz_journal').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
+      if(count===0){
+        const{error:insertErr}=await SB.from('yz_journal').insert({
+          user_id:currentUser.id,user_email:currentUser.email,
+          user_name:currentUser.user_metadata?.full_name||currentUser.email,
+          data,updated_at:new Date().toISOString()
+        });
+        if(insertErr){toast('⚠ Insert error: '+insertErr.message);throw insertErr;}
+      }
+    } else if(updateErr){
+      // Update failed for real - try upsert as last resort
+      const{error:upsertErr}=await SB.from('yz_journal').upsert({
+        user_id:currentUser.id,user_email:currentUser.email,
+        user_name:currentUser.user_metadata?.full_name||currentUser.email,
+        data,updated_at:new Date().toISOString()
+      },{onConflict:'user_id'});
+      if(upsertErr){toast('⚠ Sync error: '+upsertErr.message);throw upsertErr;}
     }
-    // Show success state
+    // Success
     if(overlay){
       if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
       if(sub)sub.textContent='ALL DATA SAVED';
-      if(card){
-        card.style.borderColor='rgba(34,211,160,0.5)';
-        card.style.boxShadow='0 0 50px rgba(34,211,160,0.2),0 0 100px rgba(34,211,160,0.08),0 20px 60px rgba(0,0,0,0.6)';
-      }
+      if(card){card.style.borderColor='rgba(34,211,160,0.5)';card.style.boxShadow='0 0 50px rgba(34,211,160,0.2),0 20px 60px rgba(0,0,0,0.6)';}
       setTimeout(()=>{
         if(card)card.style.animation='cloudSyncOut .3s ease forwards';
         setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
       },900);
     }
   }catch(e){
-    console.error('Supabase save error:',e);
+    console.error('saveToSupabase failed:',e);
     if(overlay){
       if(title){title.textContent='SYNC FAILED';title.style.color='var(--red)';title.style.textShadow='0 0 12px rgba(248,113,113,0.5)';}
-      if(sub)sub.textContent='CHECK CONNECTION';
-      if(card){card.style.borderColor='rgba(248,113,113,0.4)';card.style.boxShadow='0 0 40px rgba(248,113,113,0.15),0 20px 60px rgba(0,0,0,0.6)';}
+      if(sub)sub.textContent=e.message||'CHECK CONNECTION';
+      if(card){card.style.borderColor='rgba(248,113,113,0.4)';}
       setTimeout(()=>{
         if(card)card.style.animation='cloudSyncOut .3s ease forwards';
-        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
-      },1800);
+        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';}},320);
+      },2500);
     }
   }
 }
