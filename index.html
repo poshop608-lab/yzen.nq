@@ -4353,7 +4353,11 @@ async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
-    if(error){console.warn('loadUserData error:',error.message);return;}
+    if(error){
+      console.warn('loadUserData error:',error.message,error.code);
+      toast('⚠ Load error: '+error.message);
+      return;
+    }
     if(data&&data.data&&Object.keys(data.data).length>0){
       const remote=data.data;
       if(remote.trades)S.trades=remote.trades;
@@ -4369,7 +4373,6 @@ async function loadUserData(){
       if(remote.newsEvents)S.newsEvents=remote.newsEvents;
       if(remote.replayNotes)S.replayNotes=remote.replayNotes;
       if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-      // Persist to localStorage so next load is instant
       try{
         localStorage.setItem('yz4',JSON.stringify(S));
         localStorage.setItem('yz4_backup',JSON.stringify(S));
@@ -4381,19 +4384,43 @@ async function loadUserData(){
 async function manualSync(){
   const btn=document.getElementById('sync-btn');
   if(!SB||!currentUser||currentUser.id==='demo'){
-    toast('⚠ Sign in to sync');
+    toast('⚠ Not signed in');
     return;
   }
   if(btn){btn.textContent='⟳';btn.style.color='var(--gold)';}
   try{
-    await saveToSupabase();
+    // Step 1: Push local data up
+    const payload={
+      user_id:currentUser.id,
+      user_email:currentUser.email,
+      user_name:currentUser.user_metadata?.full_name||currentUser.email,
+      data:{
+        trades:S.trades,notes:S.notes,deposits:S.deposits,
+        cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
+        settings:S.settings,envFields:S.envFields,
+        checklist:S.checklist,filterPresets:S.filterPresets,
+        newsEvents:S.newsEvents,replayNotes:S.replayNotes
+      },
+      updated_at:new Date().toISOString()
+    };
+    const{error:pushErr}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
+    if(pushErr){
+      toast('⚠ Push failed: '+pushErr.message);
+      if(btn){btn.textContent='☁️';btn.style.color='';}
+      return;
+    }
+    // Step 2: Pull back to confirm + refresh UI
+    await loadUserData();
+    rCalendar();
     if(btn){
       btn.textContent='✓';btn.style.color='var(--green)';
       setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
     }
+    toast('☁️ Synced!');
   }catch(e){
+    console.error('manualSync error:',e);
+    toast('⚠ Sync error: '+e.message);
     if(btn){btn.textContent='☁️';btn.style.color='';}
-    toast('Sync failed — check connection');
   }
 }
 async function saveToSupabase(){
@@ -4424,7 +4451,10 @@ async function saveToSupabase(){
       updated_at:new Date().toISOString()
     };
     const{error:upsertError}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id'});
-    if(upsertError)throw upsertError;
+    if(upsertError){
+      toast('⚠ DB Error: '+upsertError.message);
+      throw upsertError;
+    }
     // Show success state
     if(overlay){
       if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
