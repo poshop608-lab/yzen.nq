@@ -4607,36 +4607,19 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    const{data,error}=await SB.from('yz_journal').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
+    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
     if(!data||!data.data){
-      // No cloud row — push everything local up
       await saveToSupabase(true);
       return;
     }
     const r=data.data;
-    const cloudTs=new Date(data.updated_at||0).getTime();
-    const localTs=parseInt(localStorage.getItem('yz4_ts')||'0');
 
-    // Find trades added locally AFTER last cloud save (unsynced new trades)
-    const unsyncedLocal=S.trades.filter(t=>{
-      const tTs=t.updatedAt||0;
-      return tTs>cloudTs && !(r.deletedIds||[]).map(String).includes(String(t.id));
-    });
-
-    // CLOUD IS TRUTH — take cloud trades directly
-    const cloudTrades=(r.trades||[]).filter(t=>
-      !(r.deletedIds||[]).map(String).includes(String(t.id))
-    );
-
-    // Add unsynced local trades that aren't in cloud yet
-    const cloudIds=new Set(cloudTrades.map(t=>String(t.id)));
-    const toAdd=unsyncedLocal.filter(t=>!cloudIds.has(String(t.id)));
-
-    S.trades=[...cloudTrades,...toAdd].sort((a,b)=>new Date(b.date)-new Date(a.date));
-    S.deletedIds=[...(r.deletedIds||[])];
-
-    // Everything else: cloud wins
+    // CLOUD IS 100% TRUTH — no merging, no local overrides
+    const deleted=new Set((r.deletedIds||[]).map(String));
+    S.trades=(r.trades||[]).filter(t=>!deleted.has(String(t.id)));
+    S.trades.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    S.deletedIds=r.deletedIds||[];
     if(r.notes)S.notes=r.notes;
     if(r.deposits)S.deposits=r.deposits;
     if(r.accounts&&r.accounts.length>0){
@@ -4652,10 +4635,6 @@ async function loadUserData(){
     if(r.newsEvents)S.newsEvents=r.newsEvents;
     if(r.replayNotes)S.replayNotes=r.replayNotes;
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-
-    // If we have unsynced local trades, push them up immediately
-    if(toAdd.length>0) await saveToSupabase(true);
-
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
   }catch(e){console.warn('loadUserData:',e.message);}
 }
