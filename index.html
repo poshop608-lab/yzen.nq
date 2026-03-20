@@ -2067,6 +2067,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
 <div class="toast" id="toast"></div>
 
+<!-- ── TRADE DETAIL MODAL ── -->
+<div class="overlay" id="tdmodal">
+<div class="modal" style="width:520px;padding:0">
+  <div class="mh" style="padding:14px 20px">
+    <div class="mt">Trade Detail</div>
+    <div class="mc" onclick="closeM('tdmodal')">✕</div>
+  </div>
+  <div class="mb" style="padding:0;max-height:80vh" id="td-content"></div>
+</div>
+</div>
+
 <!-- ── CLOUD SYNC OVERLAY ── -->
 <div id="cloud-sync-overlay" style="display:none;position:fixed;inset:0;z-index:99998;pointer-events:none;align-items:center;justify-content:center;">
   <div id="cloud-sync-card" style="
@@ -2588,10 +2599,11 @@ function saveTrade(){
   let outcome=document.getElementById('t-out').value;
   if(Math.abs(pnl)<=be&&pnl!==0)outcome='be';
   const t={
-    id:Date.now(),account:S.cur,
+    id:S._editIdx!=null?S.trades[S._editIdx].id:Date.now(),
+    account:S.cur,
     date:document.getElementById('t-date').value,
     title:document.getElementById('t-title').value,
-    ticker:document.getElementById('t-tk').value||'MNQ',
+    ticker:document.getElementById('t-tk').value||'NQ!',
     pnl,rr:parseFloat(document.getElementById('t-rr').value)||0,
     entryTime:document.getElementById('t-et').value,
     exitTime:document.getElementById('t-xt').value,
@@ -2614,7 +2626,16 @@ function saveTrade(){
     images:[...S.tradeImages]
   };
   if(!t.date){toast('⚠ Date required');return;}
-  S.trades.push(t);save();closeM('tmodal');rp('calendar');
+  // Edit mode vs new
+  if(S._editIdx!=null){
+    S.trades[S._editIdx]=t;
+    S._editIdx=null;
+    document.querySelector('#tmodal .mt').textContent='Log Trade';
+    toast('Trade updated ✓');
+  } else {
+    S.trades.push(t);
+  }
+  save();closeM('tmodal');rp('calendar');
   // Success burst
   const isWin=t.outcome==='win';
   const isBE=t.outcome==='be';
@@ -2643,13 +2664,10 @@ function renderTrades(){
   });
   if(!trades.length){el.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  const outcomeColor=o=>o==='win'?'var(--green)':o==='loss'?'var(--red)':'var(--blue)';
-  const outcomeGlow=o=>o==='win'?'var(--green-glow)':o==='loss'?'var(--red-glow)':'var(--blue-dim)';
-  el.innerHTML=[...trades].reverse().map((t,idx)=>{
+  const oc=o=>o==='win'?'var(--green)':o==='loss'?'var(--red)':'var(--blue)';
+  el.innerHTML=[...trades].reverse().map(t=>{
     const pnl=parseFloat(t.pnl)||0;
-    const isWin=t.outcome==='win';
-    const isLoss=t.outcome==='loss';
-    const realIdx=S.trades.indexOf(t);
+    const ri=S.trades.indexOf(t);
     const img=t.images&&t.images.length?t.images[0]:null;
     const tags=[
       t.duration?`<span class="tag" style="background:var(--g2);color:var(--text3)">⏱ ${t.duration}</span>`:'',
@@ -2658,47 +2676,168 @@ function renderTrades(){
       t.htfBias?`<span class="tag" style="background:var(--g2);color:var(--text3)">${t.htfBias}</span>`:'',
       t.mistake?`<span class="tag" style="background:var(--red-dim);color:var(--red)">${t.mistake}</span>`:'',
     ].filter(Boolean).join('');
-    return `<div class="card" style="padding:0;overflow:hidden;border-color:${outcomeColor(t.outcome)}22;transition:border-color .15s">
-      ${img?`<div style="width:100%;height:160px;overflow:hidden;position:relative">
+    return `<div class="card" style="padding:0;overflow:hidden;border-color:${oc(t.outcome)}33;cursor:pointer" onclick="openTradeDetail(${ri})">
+      ${img?`<div style="width:100%;height:180px;overflow:hidden;position:relative">
         <img src="${img}" style="width:100%;height:100%;object-fit:cover;display:block">
-        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(6,8,16,0.9))"></div>
-      </div>`:''}
-      <div style="padding:16px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(6,8,16,0.95))"></div>
+        <div style="position:absolute;bottom:12px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-end">
           <div>
-            <div style="font-family:var(--fd);font-size:20px;color:var(--text);letter-spacing:.02em">${t.ticker||'—'}</div>
-            <div style="font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:2px">${t.date}${t.session?' · '+t.session:''}</div>
-            ${t.title?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${t.title}</div>`:''}
+            <div style="font-family:var(--fd);font-size:22px;color:#fff;letter-spacing:.02em;text-shadow:0 2px 8px rgba(0,0,0,.8)">${t.ticker||'—'}</div>
+            <div style="font-family:var(--fm);font-size:10px;color:rgba(255,255,255,.6)">${t.date}${t.session?' · '+t.session:''}</div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-            <span style="font-family:var(--fd);font-size:13px;color:var(--text3);letter-spacing:.06em">${t.grade||'—'}</span>
-            <span style="font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.1em;color:${outcomeColor(t.outcome)};background:${outcomeColor(t.outcome)}22;padding:3px 10px;border-radius:20px;border:1px solid ${outcomeColor(t.outcome)}44">${(t.outcome||'').toUpperCase()}</span>
+          <span style="font-family:var(--fm);font-size:10px;font-weight:700;color:${oc(t.outcome)};background:${oc(t.outcome)}33;padding:3px 10px;border-radius:20px;border:1px solid ${oc(t.outcome)}66">${(t.outcome||'').toUpperCase()}</span>
+        </div>
+      </div>`:''}
+      <div style="padding:14px">
+        ${!img?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <div style="font-family:var(--fd);font-size:18px;color:var(--text)">${t.ticker||'—'}</div>
+            <div style="font-family:var(--fm);font-size:10px;color:var(--text3)">${t.date}${t.session?' · '+t.session:''}</div>
+            ${t.title?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${t.title}</div>`:''}
+          </div>
+          <span style="font-family:var(--fm);font-size:10px;font-weight:700;color:${oc(t.outcome)};background:${oc(t.outcome)}22;padding:3px 10px;border-radius:20px;border:1px solid ${oc(t.outcome)}44">${(t.outcome||'').toUpperCase()}</span>
+        </div>`:''}
+        ${img&&t.title?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${t.title}</div>`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px;text-align:center">
+            <div style="font-family:var(--fd);font-size:14px;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div>
+            <div style="font-family:var(--fm);font-size:7px;color:var(--text3);letter-spacing:.1em;margin-top:2px">P&L</div>
+          </div>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px;text-align:center">
+            <div style="font-family:var(--fd);font-size:14px;color:var(--blue)">${t.rr?t.rr+'R':'—'}</div>
+            <div style="font-family:var(--fm);font-size:7px;color:var(--text3);letter-spacing:.1em;margin-top:2px">R:R</div>
+          </div>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px;text-align:center">
+            <div style="font-family:var(--fd);font-size:14px;color:${(t.psychRating||0)>=7?'var(--green)':(t.psychRating||0)>=5?'#eab308':'var(--red)'}">${t.psychRating||'—'}</div>
+            <div style="font-family:var(--fm);font-size:7px;color:var(--text3);letter-spacing:.1em;margin-top:2px">PSYCH</div>
+          </div>
+          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:8px;text-align:center">
+            <div style="font-family:var(--fd);font-size:14px;color:var(--gold)">${t.grade||'—'}</div>
+            <div style="font-family:var(--fm);font-size:7px;color:var(--text3);letter-spacing:.1em;margin-top:2px">GRADE</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
-            <div style="font-family:var(--fd);font-size:16px;font-weight:600;color:'+((pnl>=0)?'var(--green)':'var(--red)')+'">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
-            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">P&L</div>
-          </div>
-          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
-            <div style="font-family:var(--fd);font-size:16px;color:var(--blue)">${t.rr?t.rr+'R':'—'}</div>
-            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">R:R</div>
-          </div>
-          <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px;text-align:center">
-            <div style="font-family:var(--fd);font-size:16px;color:${(t.psychRating||0)>=7?'var(--green)':(t.psychRating||0)>=5?'#eab308':'var(--red)'}">${t.psychRating||'—'}</div>
-            <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.12em;margin-top:3px">PSYCH</div>
-          </div>
-        </div>
-        ${tags?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${tags}</div>`:''}
-        ${t.notes?`<div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;font-style:italic">${t.notes}</div>`:''}
-        <div style="display:flex;justify-content:flex-end">
-          <button class="btn btn-red btn-sm" style="font-size:10px;padding:4px 12px" onclick="delTrade(${realIdx})">✕ Delete</button>
-        </div>
+        ${tags?`<div style="display:flex;flex-wrap:wrap;gap:4px">${tags}</div>`:''}
       </div>
     </div>`;
   }).join('');
 }
 async function delTrade(i){const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');if(ok){S.trades.splice(i,1);save();renderTrades();toast('Deleted');}}
+
+function openTradeDetail(i){
+  const t=S.trades[i];
+  if(!t)return;
+  const pnl=parseFloat(t.pnl)||0;
+  const oc=t.outcome==='win'?'var(--green)':t.outcome==='loss'?'var(--red)':'var(--blue)';
+  const imgs=t.images&&t.images.length?t.images.map(src=>`<img src="${src}" onclick="this.requestFullscreen&&this.requestFullscreen()" style="width:100%;border-radius:var(--r);cursor:zoom-in;margin-bottom:8px">`).join(''):'';
+  const tags=[
+    t.pdArray?`<span class="tag" style="background:var(--gold-dim);color:var(--gold)">📍 ${t.pdArray}</span>`:'',
+    t.target?`<span class="tag" style="background:var(--blue-dim);color:var(--blue)">🎯 ${t.target}</span>`:'',
+    t.htfBias?`<span class="tag" style="background:var(--g2);color:var(--text2)">${t.htfBias}</span>`:'',
+    t.style?`<span class="tag" style="background:var(--g2);color:var(--text3)">${t.style}</span>`:'',
+    t.emotion?`<span class="tag" style="background:var(--blue-dim);color:var(--blue)">${t.emotion}</span>`:'',
+    t.mistake?`<span class="tag" style="background:var(--red-dim);color:var(--red)">⚠ ${t.mistake}</span>`:'',
+    t.duration?`<span class="tag" style="background:var(--g2);color:var(--text3)">⏱ ${t.duration}</span>`:'',
+  ].filter(Boolean).join('');
+  document.getElementById('td-content').innerHTML=`
+    <div style="padding:20px">
+      ${imgs}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-family:var(--fd);font-size:26px;color:var(--text)">${t.ticker||'—'}</div>
+          <div style="font-family:var(--fm);font-size:11px;color:var(--text3)">${t.date}${t.session?' · '+t.session:''}</div>
+          ${t.title?`<div style="font-size:13px;color:var(--text2);margin-top:4px">${t.title}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <span style="font-family:var(--fm);font-size:11px;font-weight:700;color:${oc};background:${oc}22;padding:4px 12px;border-radius:20px;border:1px solid ${oc}44">${(t.outcome||'').toUpperCase()}</span>
+          <div style="font-family:var(--fd);font-size:13px;color:var(--gold);margin-top:6px">${t.grade||'—'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;text-align:center">
+          <div style="font-family:var(--fd);font-size:20px;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em">P&L</div>
+        </div>
+        <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;text-align:center">
+          <div style="font-family:var(--fd);font-size:20px;color:var(--blue)">${t.rr?t.rr+'R':'—'}</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em">R:R</div>
+        </div>
+        <div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;text-align:center">
+          <div style="font-family:var(--fd);font-size:20px;color:${(t.psychRating||0)>=7?'var(--green)':(t.psychRating||0)>=5?'#eab308':'var(--red)'}">${t.psychRating||'—'}</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em">PSYCH</div>
+        </div>
+      </div>
+      ${t.entryPrice||t.stopPrice?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        ${t.entryPrice?`<div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px"><div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em">ENTRY</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-top:2px">${t.entryPrice}</div></div>`:''}
+        ${t.stopPrice?`<div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:10px"><div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em">STOP</div><div style="font-size:14px;font-weight:600;color:var(--red);margin-top:2px">${t.stopPrice}</div></div>`:''}
+      </div>`:''}
+      ${tags?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px">${tags}</div>`:''}
+      ${t.notes?`<div style="background:var(--g1);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;margin-bottom:10px"><div style="font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.1em;margin-bottom:6px">NOTES</div><div style="font-size:12px;color:var(--text2);line-height:1.7">${t.notes}</div></div>`:''}
+      ${t.lesson?`<div style="background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:12px"><div style="font-family:var(--fm);font-size:8px;color:var(--gold);letter-spacing:.1em;margin-bottom:6px">LESSON</div><div style="font-size:12px;color:var(--text2);line-height:1.7">${t.lesson}</div></div>`:''}
+    </div>
+    <div style="padding:0 20px 20px;display:flex;gap:8px">
+      <button class="btn btn-glass" style="flex:1" onclick="editTrade(${i});closeM('tdmodal')">✏ Edit</button>
+      <button class="btn btn-red" style="flex:1" onclick="delTrade(${i});closeM('tdmodal')">✕ Delete</button>
+    </div>`;
+  openM('tdmodal');
+}
+
+function editTrade(i){
+  const t=S.trades[i];
+  if(!t)return;
+  S.tradeImages=[...(t.images||[])];
+  S.envState={...(t.env||{})};
+  S.psychRating=t.psychRating||7;
+  S.techRating=t.techRating||5;
+  S._editIdx=i;
+  // Fill form
+  document.getElementById('t-date').value=t.date||'';
+  document.getElementById('t-title').value=t.title||'';
+  document.getElementById('t-pnl').value=t.pnl||'';
+  document.getElementById('t-rr').value=t.rr||'';
+  document.getElementById('t-et').value=t.entryTime||'';
+  document.getElementById('t-xt').value=t.exitTime||'';
+  document.getElementById('t-ep').value=t.entryPrice||'';
+  document.getElementById('t-sp').value=t.stopPrice||'';
+  document.getElementById('t-pd').value=t.pdArray||'';
+  document.getElementById('t-tgt').value=t.target||'';
+  document.getElementById('t-notes').value=t.notes||'';
+  document.getElementById('t-lesson').value=t.lesson||'';
+  document.getElementById('t-bias').value=t.htfBias||'';
+  document.getElementById('t-style').value=t.style||'';
+  document.getElementById('t-emotion').value=t.emotion||'';
+  document.getElementById('t-mistake').value=t.mistake||'';
+  // Ticker
+  document.querySelectorAll('#ticker-pills .ticker-pill').forEach(p=>p.classList.remove('active'));
+  const tp=document.querySelector(`#ticker-pills [data-val="${t.ticker}"]`);
+  if(tp)tp.classList.add('active');
+  document.getElementById('t-tk').value=t.ticker||'NQ!';
+  // Session
+  document.querySelectorAll('#session-pills .sess-pill').forEach(p=>p.classList.remove('active'));
+  const sp=document.querySelector(`#session-pills [data-val="${t.session}"]`);
+  if(sp)sp.classList.add('active');
+  document.getElementById('t-sess').value=t.session||'NY-AM';
+  // Outcome
+  document.querySelectorAll('.outcome-pill').forEach(p=>p.classList.remove('active'));
+  const op=document.querySelector(`.outcome-pill[data-val="${t.outcome}"]`);
+  if(op)op.classList.add('active');
+  document.getElementById('t-out').value=t.outcome||'win';
+  // Grade
+  document.querySelectorAll('#grade-pills .grade-pill').forEach(p=>p.classList.remove('active'));
+  const gp=document.querySelector(`#grade-pills [data-val="${t.grade}"]`);
+  if(gp)gp.classList.add('active');
+  document.getElementById('t-grade').value=t.grade||'A';
+  // Images preview
+  const prev=document.getElementById('img-prev');
+  prev.innerHTML=(t.images||[]).map(src=>`<img src="${src}" style="width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--bdr)">`).join('');
+  // Duration display
+  const dd=document.getElementById('t-dur-display');
+  if(dd)dd.value=t.duration||'';
+  document.getElementById('t-dur').value=t.duration||'';
+  // Change modal title to Edit
+  document.querySelector('#tmodal .mt').textContent='Edit Trade';
+  buildPR();buildTR();buildEnvForm();
+  openM('tmodal');
+}
 
 // ══════ NOTES ══════
 let _nbTab='notes';
@@ -4191,7 +4330,10 @@ function showConfig(){
 
 function initSupabase(url,key){
   try{
-    SB=window.supabase.createClient(url,key);
+    SB=window.supabase.createClient(url,key,{
+      auth:{persistSession:true,autoRefreshToken:true},
+      realtime:{params:{eventsPerSecond:10}}
+    });
     checkSession();
   }catch(e){console.error('Supabase init error:',e);}
 }
