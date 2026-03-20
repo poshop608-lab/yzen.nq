@@ -2173,7 +2173,6 @@ function save(){
     localStorage.setItem('yz4',payload);
     localStorage.setItem('yz4_backup',payload);
     localStorage.setItem('yz4_ts',Date.now().toString());
-    // Flash topbar indicator
     const ind=document.getElementById('save-indicator');
     if(ind){ind.style.opacity='1';clearTimeout(ind._t);ind._t=setTimeout(()=>ind.style.opacity='0',1800);}
   }catch(e){
@@ -2183,9 +2182,10 @@ function save(){
       localStorage.setItem('yz4',JSON.stringify(S));
     }catch(e2){}
   }
-  // Debounce Supabase cloud sync
+  // Don't auto-sync to cloud during initial data load
+  if(window._loadingUserData)return;
   clearTimeout(save._sbTimer);
-  save._sbTimer=setTimeout(()=>saveToSupabase(true),500); // silent auto-save
+  save._sbTimer=setTimeout(()=>saveToSupabase(true),500);
 }
 function load(){
   try{
@@ -2780,23 +2780,30 @@ async function delTrade(i){
   const ok=await customConfirm('This trade will be permanently deleted.','📉','Delete Trade','Delete');
   if(ok){
     const t=S.trades[i];
-    if(t&&t.id){
-      if(!S.deletedIds)S.deletedIds=[];
-      S.deletedIds.push(String(t.id));
-      if(S.deletedIds.length>500)S.deletedIds=S.deletedIds.slice(-500);
-    }
+    if(!t){toast('⚠ Trade not found');return;}
+    // Record deleted ID
+    if(!S.deletedIds)S.deletedIds=[];
+    if(t.id)S.deletedIds.push(String(t.id));
+    if(S.deletedIds.length>500)S.deletedIds=S.deletedIds.slice(-500);
+    // Remove from array
     S.trades.splice(i,1);
-    // Save locally
+    // Save locally immediately
     try{
-      localStorage.setItem('yz4',JSON.stringify(S));
-      localStorage.setItem('yz4_backup',JSON.stringify(S));
+      const payload=JSON.stringify(S);
+      localStorage.setItem('yz4',payload);
+      localStorage.setItem('yz4_backup',payload);
       localStorage.setItem('yz4_ts',Date.now().toString());
     }catch(e){}
-    // Push to cloud IMMEDIATELY — no debounce
-    clearTimeout(save._sbTimer);
-    await saveToSupabase(true);
     renderTrades();
-    toast('Deleted');
+    toast('Deleting...');
+    // Push to cloud and confirm
+    clearTimeout(save._sbTimer);
+    try{
+      await saveToSupabase(true);
+      toast('✓ Deleted & synced');
+    }catch(e){
+      toast('⚠ Delete saved locally, sync failed: '+e.message);
+    }
   }
 }
 
@@ -4531,6 +4538,26 @@ function startRealtimeSync(){
   window.addEventListener('beforeunload',()=>{
     if(SB&&currentUser&&currentUser.id!=='demo') saveToSupabase(true);
   });
+
+  // ── Poll every 10s as guaranteed fallback (works even without Realtime) ──
+  if(window._syncInterval)clearInterval(window._syncInterval);
+  window._syncInterval=setInterval(async()=>{
+    if(!SB||!currentUser||window._loadingUserData)return;
+    try{
+      const{data,error}=await SB.from('yz_journal')
+        .select('updated_at')
+        .eq('user_id',currentUser.id)
+        .maybeSingle();
+      if(error||!data)return;
+      const cloudTs=new Date(data.updated_at).getTime();
+      const lastKnown=window._lastCloudTs||0;
+      if(cloudTs>lastKnown){
+        window._lastCloudTs=cloudTs;
+        await loadUserData();
+        refreshCurrentPage();
+      }
+    }catch(e){}
+  },10000); // every 10 seconds
 }
 
 function refreshCurrentPage(){
@@ -4606,6 +4633,9 @@ async function authDemo(){
 
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
+  // Block auto-saves and cancel pending ones during load
+  window._loadingUserData=true;
+  clearTimeout(save._sbTimer);
   try{
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
@@ -4637,6 +4667,7 @@ async function loadUserData(){
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
   }catch(e){console.warn('loadUserData:',e.message);}
+  finally{window._loadingUserData=false;}
 }
 
 
@@ -4676,8 +4707,10 @@ async function saveToSupabase(silent=false){
     user_email:currentUser.email,
     user_name:currentUser.user_metadata?.full_name||currentUser.email,
     data:{
-      trades:S.trades,notes:S.notes,deposits:S.deposits,
-        deletedIds:S.deletedIds||[],
+      // Always filter deleted trades before saving - belt AND suspenders
+      trades:S.trades.filter(t=>!(S.deletedIds||[]).includes(String(t.id))),
+      notes:S.notes,deposits:S.deposits,
+      deletedIds:S.deletedIds||[],
       cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
       settings:S.settings,envFields:S.envFields,
       checklist:S.checklist,filterPresets:S.filterPresets,
@@ -4692,16 +4725,18 @@ async function saveToSupabase(silent=false){
       toast('⚠ '+error.message);
       showOverlay('FAILED','var(--red)',error.message);
       hideOverlay(2500);
-      return;
+      throw error;
     }
     if(card){card.style.borderColor='rgba(34,211,160,0.5)';}
     showOverlay('SYNCED ✓','var(--green)','ALL DATA SAVED');
     hideOverlay(1000);
+    window._lastCloudTs=Date.now(); // mark so poll doesn't re-pull our own save
   }catch(e){
     console.error('saveToSupabase:',e);
-    toast('⚠ Sync error: '+e.message);
+    if(!e.code)toast('⚠ Sync error: '+e.message); // avoid double toast
     showOverlay('FAILED','var(--red)',e.message||'Error');
     hideOverlay(2500);
+    throw e; // re-throw so callers know it failed
   }
 }
 
