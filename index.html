@@ -4494,32 +4494,25 @@ async function authDemo(){
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   try{
-    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).single();
-    if(error){
-      console.warn('loadUserData error:',error.message,error.code);
-      toast('⚠ Load error: '+error.message);
-      return;
-    }
-    if(data&&data.data&&Object.keys(data.data).length>0){
-      const remote=data.data;
-      if(remote.trades)S.trades=remote.trades;
-      if(remote.notes)S.notes=remote.notes;
-      if(remote.deposits)S.deposits=remote.deposits;
-      if(remote.accounts)S.accounts=remote.accounts;
-      if(remote.cur)S.cur=remote.cur;
-      if(remote.accountMeta)S.accountMeta=remote.accountMeta;
-      if(remote.settings)S.settings={...S.settings,...remote.settings};
-      if(remote.envFields)S.envFields=remote.envFields;
-      if(remote.checklist)S.checklist={...S.checklist,...remote.checklist};
-      if(remote.filterPresets)S.filterPresets=remote.filterPresets;
-      if(remote.newsEvents)S.newsEvents=remote.newsEvents;
-      if(remote.replayNotes)S.replayNotes=remote.replayNotes;
-      if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
-      try{
-        localStorage.setItem('yz4',JSON.stringify(S));
-        localStorage.setItem('yz4_backup',JSON.stringify(S));
-      }catch(e){}
-    }
+    // Use maybeSingle() so missing row returns null instead of error
+    const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
+    if(error){console.warn('load error:',error.message);toast('⚠ Load: '+error.message);return;}
+    if(!data||!data.data)return; // no remote data yet
+    const r=data.data;
+    if(r.trades)S.trades=r.trades;
+    if(r.notes)S.notes=r.notes;
+    if(r.deposits)S.deposits=r.deposits;
+    if(r.accounts)S.accounts=r.accounts;
+    if(r.cur)S.cur=r.cur;
+    if(r.accountMeta)S.accountMeta=r.accountMeta;
+    if(r.settings)S.settings={...S.settings,...r.settings};
+    if(r.envFields)S.envFields=r.envFields;
+    if(r.checklist)S.checklist={...S.checklist,...r.checklist};
+    if(r.filterPresets)S.filterPresets=r.filterPresets;
+    if(r.newsEvents)S.newsEvents=r.newsEvents;
+    if(r.replayNotes)S.replayNotes=r.replayNotes;
+    if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+    try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
   }catch(e){console.warn('loadUserData catch:',e.message);}
 }
 
@@ -4571,68 +4564,51 @@ async function saveToSupabase(){
   const card=document.getElementById('cloud-sync-card');
   const title=document.getElementById('cloud-sync-title');
   const sub=document.getElementById('cloud-sync-sub');
-  if(overlay){
+  const showOverlay=(txt,col,sub2)=>{
+    if(!overlay)return;
     overlay.style.display='flex';
     if(card)card.style.animation='cloudSyncIn .25s cubic-bezier(.34,1.56,.64,1) forwards';
-    if(title){title.textContent='SYNCING';title.style.color='var(--green)';title.style.textShadow='0 0 12px rgba(34,211,160,0.5)';}
-    if(sub)sub.textContent='SAVING TO CLOUD';
-  }
-  const data={
-    trades:S.trades,notes:S.notes,deposits:S.deposits,
-    cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
-    settings:S.settings,envFields:S.envFields,
-    checklist:S.checklist,filterPresets:S.filterPresets,
-    newsEvents:S.newsEvents,replayNotes:S.replayNotes
+    if(title){title.textContent=txt;title.style.color=col;title.style.textShadow='0 0 12px '+col+'88';}
+    if(sub)sub.textContent=sub2;
+  };
+  const hideOverlay=(delay)=>setTimeout(()=>{
+    if(card)card.style.animation='cloudSyncOut .3s ease forwards';
+    setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
+  },delay);
+  showOverlay('SYNCING','var(--green)','SAVING TO CLOUD');
+  const payload={
+    user_id:currentUser.id,
+    user_email:currentUser.email,
+    user_name:currentUser.user_metadata?.full_name||currentUser.email,
+    data:{
+      trades:S.trades,notes:S.notes,deposits:S.deposits,
+      cur:S.cur,accounts:S.accounts,accountMeta:S.accountMeta||{},
+      settings:S.settings,envFields:S.envFields,
+      checklist:S.checklist,filterPresets:S.filterPresets,
+      newsEvents:S.newsEvents,replayNotes:S.replayNotes
+    },
+    updated_at:new Date().toISOString()
   };
   try{
-    // Try UPDATE first (works if row exists)
-    let{error:updateErr}=await SB.from('yz_journal')
-      .update({data,updated_at:new Date().toISOString(),user_email:currentUser.email,user_name:currentUser.user_metadata?.full_name||currentUser.email})
-      .eq('user_id',currentUser.id);
-    // If no row existed, INSERT
-    if(updateErr&&updateErr.code==='PGRST116'||!updateErr){
-      // check if actually updated
-      const{count}=await SB.from('yz_journal').select('*',{count:'exact',head:true}).eq('user_id',currentUser.id);
-      if(count===0){
-        const{error:insertErr}=await SB.from('yz_journal').insert({
-          user_id:currentUser.id,user_email:currentUser.email,
-          user_name:currentUser.user_metadata?.full_name||currentUser.email,
-          data,updated_at:new Date().toISOString()
-        });
-        if(insertErr){toast('⚠ Insert error: '+insertErr.message);throw insertErr;}
-      }
-    } else if(updateErr){
-      // Update failed for real - try upsert as last resort
-      const{error:upsertErr}=await SB.from('yz_journal').upsert({
-        user_id:currentUser.id,user_email:currentUser.email,
-        user_name:currentUser.user_metadata?.full_name||currentUser.email,
-        data,updated_at:new Date().toISOString()
-      },{onConflict:'user_id'});
-      if(upsertErr){toast('⚠ Sync error: '+upsertErr.message);throw upsertErr;}
+    const{error}=await SB.from('yz_journal').upsert(payload,{onConflict:'user_id',ignoreDuplicates:false});
+    if(error){
+      console.error('upsert error:',error);
+      toast('⚠ '+error.message);
+      showOverlay('FAILED','var(--red)',error.message);
+      hideOverlay(2500);
+      return;
     }
-    // Success
-    if(overlay){
-      if(title){title.textContent='SYNCED ✓';title.style.color='var(--green)';}
-      if(sub)sub.textContent='ALL DATA SAVED';
-      if(card){card.style.borderColor='rgba(34,211,160,0.5)';card.style.boxShadow='0 0 50px rgba(34,211,160,0.2),0 20px 60px rgba(0,0,0,0.6)';}
-      setTimeout(()=>{
-        if(card)card.style.animation='cloudSyncOut .3s ease forwards';
-        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';card.style.boxShadow='';}},320);
-      },900);
-    }
+    if(card){card.style.borderColor='rgba(34,211,160,0.5)';}
+    showOverlay('SYNCED ✓','var(--green)','ALL DATA SAVED');
+    hideOverlay(1000);
   }catch(e){
-    console.error('saveToSupabase failed:',e);
-    if(overlay){
-      if(title){title.textContent='SYNC FAILED';title.style.color='var(--red)';title.style.textShadow='0 0 12px rgba(248,113,113,0.5)';}
-      if(sub)sub.textContent=e.message||'CHECK CONNECTION';
-      if(card){card.style.borderColor='rgba(248,113,113,0.4)';}
-      setTimeout(()=>{
-        if(card)card.style.animation='cloudSyncOut .3s ease forwards';
-        setTimeout(()=>{if(overlay)overlay.style.display='none';if(card){card.style.animation='';card.style.borderColor='';}},320);
-      },2500);
-    }
+    console.error('saveToSupabase:',e);
+    toast('⚠ Sync error: '+e.message);
+    showOverlay('FAILED','var(--red)',e.message||'Error');
+    hideOverlay(2500);
   }
 }
+
 
 function enterApp(){
   document.getElementById('auth-screen').classList.add('hidden');
