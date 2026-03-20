@@ -2458,6 +2458,10 @@ function calMove(d){S.cal.m+=d;if(S.cal.m>11){S.cal.m=0;S.cal.y++;}if(S.cal.m<0)
 // ══════ TRADE FORM ══════
 S.tradeImages=[];
 function openTradeForm(ds=''){
+  // Guard: ensure valid account exists
+  if(!S.accounts||S.accounts.length===0){toast('⚠ Create an account first');openAddAcct();return;}
+  if(!S.cur||!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+  S._editIdx=null;
   S.tradeImages=[];S.envState={};S.psychRating=7;S.techRating=5;
   document.getElementById('t-date').value=ds||new Date().toISOString().split('T')[0];
   ['t-title','t-pnl','t-rr','t-notes','t-lesson','t-pd','t-tgt','t-ep','t-sp'].forEach(id=>{
@@ -2635,12 +2639,18 @@ function handleImgs(inp){
   Array.from(inp.files).forEach(f=>{const r=new FileReader();r.onload=e=>{S.tradeImages.push(e.target.result);p.innerHTML+=`<img src="${e.target.result}" style="width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--bdr)">`};r.readAsDataURL(f);});
 }
 function saveTrade(){
+  // Ensure we have a valid account
+  if(!S.cur||!S.accounts.includes(S.cur)){
+    if(S.accounts.length>0){S.cur=S.accounts[0];}
+    else{toast('⚠ Create an account first');return;}
+  }
   const pnl=parseFloat(document.getElementById('t-pnl').value)||0;
   const be=S.settings.be||20;
   let outcome=document.getElementById('t-out').value;
   if(Math.abs(pnl)<=be&&pnl!==0)outcome='be';
   const t={
     id:S._editIdx!=null?S.trades[S._editIdx].id:(Date.now()+Math.random()).toString(36),
+    updatedAt:Date.now(),
     account:S.cur,
     date:document.getElementById('t-date').value,
     title:document.getElementById('t-title').value,
@@ -4576,24 +4586,56 @@ async function loadUserData(){
   try{
     const{data,error}=await SB.from('yz_journal').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
-    if(!data||!data.data)return;
+    if(!data||!data.data){
+      // No cloud data — push local up
+      await saveToSupabase(true);
+      return;
+    }
     const r=data.data;
+    const remoteTs=new Date(data.updated_at||0).getTime();
 
-    // ── MERGE trades by ID (never overwrite, always union) ──
+    // ── MERGE trades: latest updatedAt timestamp wins per trade ──
     const localById={};
-    S.trades.forEach(t=>{if(t.id)localById[t.id]=t;});
+    S.trades.forEach(t=>{if(t.id)localById[String(t.id)]=t;});
     const remoteById={};
-    (r.trades||[]).forEach(t=>{if(t.id)remoteById[t.id]=t;});
-    // Union: take all unique IDs from both, remote wins on conflict
-    const merged=Object.values({...localById,...remoteById});
-    // Sort by date desc
-    merged.sort((a,b)=>new Date(b.date)-new Date(a.date)||(b.id-a.id));
+    (r.trades||[]).forEach(t=>{if(t.id)remoteById[String(t.id)]=t;});
+
+    const allIds=new Set([...Object.keys(localById),...Object.keys(remoteById)]);
+    const merged=[];
+    allIds.forEach(id=>{
+      const local=localById[id];
+      const remote=remoteById[id];
+      if(local&&remote){
+        // Both have it — whichever has newer updatedAt wins
+        const lts=local.updatedAt||0;
+        const rts=remote.updatedAt||0;
+        merged.push(lts>=rts?local:remote);
+      } else if(local){
+        // Only local — it was either newly added or deleted remotely
+        // If remote snapshot is >10s newer than trade creation, treat as deleted
+        const tradeCreated=local.updatedAt||0;
+        if(remoteTs>tradeCreated+10000){
+          // deleted on another device — skip
+        } else {
+          merged.push(local);
+        }
+      } else {
+        // Only remote — always include
+        merged.push(remote);
+      }
+    });
+
+    merged.sort((a,b)=>new Date(b.date)-new Date(a.date));
     S.trades=merged;
 
-    // ── Other data: use remote if it exists, keep local otherwise ──
+    // ── Settings/accounts: remote wins ──
     if(r.notes&&r.notes.length>0)S.notes=r.notes;
     if(r.deposits&&r.deposits.length>0)S.deposits=r.deposits;
-    if(r.accounts&&r.accounts.length>0){S.accounts=r.accounts;S.cur=r.cur||S.cur;}
+    if(r.accounts&&r.accounts.length>0){
+      S.accounts=r.accounts;
+      if(r.cur&&r.accounts.includes(r.cur))S.cur=r.cur;
+      else if(!S.cur||!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+    }
     if(r.accountMeta)S.accountMeta=r.accountMeta;
     if(r.settings)S.settings={...S.settings,...r.settings};
     if(r.envFields&&r.envFields.length>0)S.envFields=r.envFields;
@@ -4603,10 +4645,8 @@ async function loadUserData(){
     if(r.replayNotes&&Object.keys(r.replayNotes||{}).length>0)S.replayNotes=r.replayNotes;
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
 
-    // Save merged state locally
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
-
-    // Push merged data back to cloud so both devices stay in sync
+    // Push merged result back so all devices get the same state
     await saveToSupabase(true);
   }catch(e){console.warn('loadUserData catch:',e.message);}
 }
