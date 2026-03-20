@@ -1054,9 +1054,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
   .sc:hover{transform:none!important}
   .btn:hover{transform:none!important}
   .card::before{display:none}
-  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.1ms!important}
+  .orb,.auth-orb{display:none!important}
+  .card::before{display:none}
   .page.active{animation:none!important}
-  .auth-box{animation:authIn .3s ease!important}
+  .sc:hover{transform:none!important}
+  .btn-gold:hover,.btn-glass:hover{transform:none!important}
 }
 @media(max-width:768px){
   .orb::after,.auth-orb::after{filter:blur(40px)!important}
@@ -1206,10 +1208,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <span class="tb-title" id="tb-title">Calendar</span>
     </div>
     <div class="tb-right">
-      <span id="save-indicator" style="opacity:0;transition:opacity .3s;display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.12em">
-        <span id="save-ind-icon" style="font-size:13px">☁️</span>
-        <span id="save-ind-text">SAVED</span>
+      <span id="save-indicator" style="opacity:0;transition:opacity .3s;font-family:var(--fm);font-size:9px;color:var(--green);letter-spacing:.12em">
+        <span id="save-ind-icon">✓</span>
+        <span id="save-ind-text"> SAVED</span>
       </span>
+      <button class="btn btn-glass btn-sm btn-ic" onclick="manualSync()" id="sync-btn" title="Sync to cloud" style="font-size:14px">☁️</button>
       <button class="btn btn-glass btn-sm btn-ic" onclick="go('settings')" title="Settings">⚙️</button>
       <button class="btn btn-gold" onclick="openTradeForm()">＋ Log Trade</button>
     </div>
@@ -2144,20 +2147,7 @@ function save(){
     localStorage.setItem('yz4_ts',Date.now().toString());
     // Flash topbar indicator
     const ind=document.getElementById('save-indicator');
-    if(ind){
-      const icon=document.getElementById('save-ind-icon');
-      const txt=document.getElementById('save-ind-text');
-      if(icon)icon.textContent='☁️';
-      if(txt){txt.textContent='SAVING...';txt.style.color='var(--text3)';}
-      ind.style.opacity='1';
-      clearTimeout(ind._t);
-      ind._t=setTimeout(()=>{
-        if(icon)icon.textContent='✓';
-        if(txt){txt.textContent='SAVED';txt.style.color='var(--green)';}
-        clearTimeout(ind._t2);
-        ind._t2=setTimeout(()=>ind.style.opacity='0',1400);
-      },600);
-    }
+    if(ind){ind.style.opacity='1';clearTimeout(ind._t);ind._t=setTimeout(()=>ind.style.opacity='0',1800);}
   }catch(e){
     try{
       const keys=Object.keys(localStorage).filter(k=>!k.startsWith('yz4'));
@@ -4224,6 +4214,15 @@ async function loadUserData(){
   }catch(e){console.log('No existing data, starting fresh');}
 }
 
+async function manualSync(){
+  const btn=document.getElementById('sync-btn');
+  if(btn){btn.textContent='⟳';btn.style.color='var(--gold)';}
+  await saveToSupabase();
+  if(btn){
+    btn.textContent='✓';btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='☁️';btn.style.color='';},2000);
+  }
+}
 async function saveToSupabase(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
   // Show glowing sync overlay
