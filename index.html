@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YzenNq">
+<meta name="application-name" content="YzenNq Journal">
+<meta name="theme-color" content="#060810">
+<meta name="description" content="YzenNq Pro Trading Journal">
+<link rel="manifest" href="manifest.json">
 <title>YzenNq Journal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1214,6 +1219,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       </span>
       <button class="btn btn-glass btn-sm btn-ic" onclick="manualSync()" id="sync-btn" title="Sync to cloud" style="font-size:14px">☁️</button>
       <button class="btn btn-glass btn-sm btn-ic" onclick="go('settings')" title="Settings">⚙️</button>
+      <button id="pwa-install-btn" onclick="installPWA()" title="Install App" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:var(--r);padding:6px 12px;cursor:pointer;color:var(--text2);font-family:var(--ff);font-size:11px;font-weight:500;transition:all .2s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='var(--text2)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install
+      </button>
       <button class="btn btn-gold" onclick="openTradeForm()">＋ Log Trade</button>
     </div>
   </div>
@@ -4817,5 +4826,32 @@ function initAuth(){
 }
 
 </script>
+<script>
+// ── PWA Install ──
+let _pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _pwaPrompt=e;
+  // Show install button in topbar
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='flex';
+});
+window.addEventListener('appinstalled',()=>{
+  _pwaPrompt=null;
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='none';
+});
+async function installPWA(){
+  if(!_pwaPrompt)return;
+  _pwaPrompt.prompt();
+  const{outcome}=await _pwaPrompt.userChoice;
+  if(outcome==='accepted')_pwaPrompt=null;
+}
+// ── Service Worker ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
 </body>
 </html>
+
