@@ -291,7 +291,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 .cc-pnl.p{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
 .cc-pnl.n{color:var(--red);text-shadow:0 0 10px var(--red-glow)}
 .cc-pnl.z{color:var(--blue)}
-.cc-info{font-size:9px;color:rgba(255,255,255,0.28);font-family:var(--fm);margin-top:2px}
+.cc-info{font-size:9px;color:rgba(255,255,255,0.42);font-family:var(--fm);font-weight:500;margin-top:3px;letter-spacing:.02em}
 .cc-bar{height:2px;background:rgba(255,255,255,0.06);border-radius:1px;margin-top:5px;overflow:hidden}
 .cc-bar-fill{height:100%;border-radius:1px;background:linear-gradient(90deg,rgba(34,211,160,0.5),var(--green))}
 
@@ -386,7 +386,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 .wp-pnl.zero{color:var(--blue);text-shadow:0 0 8px rgba(96,165,250,0.45)}
 .week-panel:hover .wp-pnl.zero{text-shadow:0 0 12px rgba(96,165,250,0.65),0 0 24px rgba(96,165,250,0.15)}
 .wp-pnl.empty{color:rgba(255,255,255,0.2);font-size:16px}
-.wp-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,0.28);margin-top:3px}
+.wp-sub{font-family:var(--fm);font-size:10px;font-weight:500;color:rgba(255,255,255,0.4);margin-top:3px}
 .wp-bar{height:2px;border-radius:1px;margin-top:8px;overflow:hidden;background:rgba(255,255,255,0.06)}
 .wp-bar-fill{height:100%;border-radius:1px;transition:width .5s ease}
 
@@ -2582,11 +2582,15 @@ function rCalendar(){
   if(curWeek.length){weekRows.push([...curWeek]);}
   document.getElementById('cal-cells').innerHTML=calParts.join('');
 
-  // ── Weekly PnL panels — one per visual calendar ROW that has real days ──
-  const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
-  const numWeeks=realWeekRows.length;
-  // Only trim trailing week panels that have no trades AND all days are after today
+  // ── Weekly PnL panels — HARD CAP 5 weeks, merge overflow into W5 ──
+  let realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
+  // Merge any 6th+ row into the 5th — day 31 belongs to W5 not W6
+  while(realWeekRows.length>5){
+    const overflow=realWeekRows.splice(5,1)[0];
+    overflow.forEach(c=>{if(c&&c.d)realWeekRows[4].push(c);});
+  }
   const todayD=today.getFullYear()===y&&today.getMonth()===m?today.getDate():days+1;
+  // Trim trailing weeks with no trades and no past days
   let displayWeeks=[...realWeekRows];
   while(displayWeeks.length>1){
     const last=displayWeeks[displayWeeks.length-1];
@@ -2724,9 +2728,9 @@ function downloadCalendar(){
   });
   if(curWeek.length)weekRows.push([...curWeek]);
   let realWeeks=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
-  while(realWeeks.length>1){
-    const last=realWeeks[realWeeks.length-1];
-    if(!last.some(c=>c&&c.trades>0))realWeeks.pop();else break;
+  while(realWeeks.length>5){
+    const overflow=realWeeks.splice(5,1)[0];
+    overflow.forEach(c=>{if(c&&c.d)realWeeks[4].push(c);});
   }
   const numWeeks=realWeeks.length;
 
@@ -2857,9 +2861,9 @@ function downloadCalendar(){
         ctx.shadowBlur=0;
 
         // sub info
-        ctx.font='400 9px DM Mono,monospace';
-        ctx.fillStyle='rgba(255,255,255,0.3)';
-        ctx.fillText(day.trades+'T · '+day.wr+'%WR',cx+8,cy+55);
+        ctx.font='500 10px DM Mono,monospace';
+        ctx.fillStyle='rgba(255,255,255,0.45)';
+        ctx.fillText(day.trades+'T · '+day.wr+'%',cx+8,cy+56);
 
         // wr bar
         const barY=cy+ch-10;
@@ -2916,9 +2920,9 @@ function downloadCalendar(){
       ctx.shadowBlur=0;
 
       // trades
-      ctx.font='400 9px DM Mono,monospace';
-      ctx.fillStyle='rgba(255,255,255,0.28)';
-      ctx.fillText(wp.trades+'t',wx+8,wy2+54);
+      ctx.font='500 10px DM Mono,monospace';
+      ctx.fillStyle='rgba(255,255,255,0.42)';
+      ctx.fillText(wp.trades+'T',wx+8,wy2+55);
     } else {
       ctx.textAlign='left';
       ctx.font='500 8px DM Mono,monospace';
