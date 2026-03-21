@@ -360,7 +360,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
   width:65px;height:65px;right:-18px;bottom:-18px;
   transition:opacity .2s,transform .2s;
 }
-.week-panel:hover .wp-orb{opacity:.55!important;transform:scale(1.2);}
+.week-panel:hover .wp-orb{opacity:.42!important;transform:scale(1.1);}
 .wp-label{
   font-family:var(--fm);font-size:7px;letter-spacing:.25em;
   color:rgba(255,255,255,0.28);text-transform:uppercase;margin-bottom:5px;
@@ -371,20 +371,20 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 }
 .wp-pnl.pos{
   color:var(--green);
-  text-shadow:0 0 14px var(--green-glow),0 0 28px rgba(34,211,160,0.15);
+  text-shadow:0 0 8px rgba(34,211,160,0.5);
 }
 .week-panel:hover .wp-pnl.pos{
-  text-shadow:0 0 20px var(--green-glow),0 0 40px rgba(34,211,160,0.3),0 0 60px rgba(34,211,160,0.1);
+  text-shadow:0 0 12px rgba(34,211,160,0.7),0 0 24px rgba(34,211,160,0.2);
 }
 .wp-pnl.neg{
   color:var(--red);
-  text-shadow:0 0 14px var(--red-glow),0 0 28px rgba(248,113,113,0.15);
+  text-shadow:0 0 8px rgba(248,113,113,0.5);
 }
 .week-panel:hover .wp-pnl.neg{
-  text-shadow:0 0 20px var(--red-glow),0 0 40px rgba(248,113,113,0.3),0 0 60px rgba(248,113,113,0.1);
+  text-shadow:0 0 12px rgba(248,113,113,0.7),0 0 24px rgba(248,113,113,0.2);
 }
-.wp-pnl.zero{color:var(--blue);text-shadow:0 0 14px var(--blue-glow)}
-.week-panel:hover .wp-pnl.zero{text-shadow:0 0 20px var(--blue-glow),0 0 40px rgba(96,165,250,0.25)}
+.wp-pnl.zero{color:var(--blue);text-shadow:0 0 8px rgba(96,165,250,0.45)}
+.week-panel:hover .wp-pnl.zero{text-shadow:0 0 12px rgba(96,165,250,0.65),0 0 24px rgba(96,165,250,0.15)}
 .wp-pnl.empty{color:rgba(255,255,255,0.2);font-size:16px}
 .wp-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,0.28);margin-top:3px}
 .wp-bar{height:2px;border-radius:1px;margin-top:8px;overflow:hidden;background:rgba(255,255,255,0.06)}
@@ -1375,7 +1375,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         Export
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 112px;gap:6px;align-items:start;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 112px;gap:6px;align-items:start;margin-bottom:12px">
       <div>
         <div class="cal-dows">
           <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
@@ -1386,7 +1386,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <!-- Weekly panels sit here, DOW labels spacer handled by padding-top in CSS -->
       <div id="cal-weekly" style="margin-top:0"></div>
     </div>
-    <div class="g5 mb4" id="cal-stats"></div>
+    <div class="g5 mb3" id="cal-stats"></div>
     <div class="g2 mb4">
       <div class="card">
         <div class="sec-title">Monthly Streak</div>
@@ -2586,8 +2586,15 @@ function rCalendar(){
   // ── Weekly PnL panels — one per visual calendar ROW that has real days ──
   const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
   const numWeeks=realWeekRows.length;
+  // Trim trailing empty weeks (no trades at end of month)
+  let displayWeeks=[...realWeekRows];
+  while(displayWeeks.length>1){
+    const last=displayWeeks[displayWeeks.length-1];
+    const hasTrades=last.some(c=>c&&c.pnl!==null&&c.trades>0);
+    if(!hasTrades)displayWeeks.pop();else break;
+  }
 
-  const allWeekPnls=realWeekRows.map(week=>{
+  const allWeekPnls=displayWeeks.map(week=>{
     const tradedDays=week.filter(c=>c&&c.pnl!==null);
     const pnl=tradedDays.reduce((s,c)=>s+c.pnl,0);
     const trades=tradedDays.reduce((s,c)=>s+c.trades,0);
@@ -2690,7 +2697,11 @@ function downloadCalendar(){
     if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
   });
   if(curWeek.length)weekRows.push([...curWeek]);
-  const realWeeks=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
+  let realWeeks=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
+  while(realWeeks.length>1){
+    const last=realWeeks[realWeeks.length-1];
+    if(!last.some(c=>c&&c.trades>0))realWeeks.pop();else break;
+  }
   const numWeeks=realWeeks.length;
 
   const weekPnls=realWeeks.map(week=>{
