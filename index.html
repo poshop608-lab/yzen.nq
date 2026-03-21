@@ -242,6 +242,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
   min-height:82px;background:var(--g1);border:1px solid var(--bdr);
   border-radius:var(--r);padding:8px;cursor:pointer;
   transition:background .15s,border-color .15s,box-shadow .15s;
+  position:relative;overflow:hidden;
 }
 .cc:hover{background:var(--g2);border-color:var(--bdr2)}
 .cc.today{border-color:var(--gold);box-shadow:0 0 14px var(--gold-dim),inset 0 0 10px var(--gold-dim)}
@@ -256,6 +257,35 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 .cc-info{font-size:9px;color:var(--text3);font-family:var(--fm);margin-top:1px}
 .cc-bar{height:2px;background:var(--g2);border-radius:1px;margin-top:4px;overflow:hidden}
 .cc-bar-fill{height:100%;border-radius:1px;background:linear-gradient(90deg,#1a9e7a,var(--green))}
+
+/* ── WEEKLY PNL PANELS ── */
+.week-panel{
+  width:110px;min-height:82px;border-radius:var(--r);padding:10px 12px;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
+  border:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.03);
+  transition:transform .18s,box-shadow .18s;
+}
+.week-panel:hover{transform:translateX(-2px);}
+.week-panel.wp-pos{border-color:rgba(34,211,160,0.25);background:rgba(34,211,160,0.05);}
+.week-panel.wp-neg{border-color:rgba(248,113,113,0.25);background:rgba(248,113,113,0.05);}
+.week-panel.wp-be{border-color:rgba(96,165,250,0.2);background:rgba(96,165,250,0.04);}
+.week-panel.wp-empty{border-color:rgba(255,255,255,0.05);opacity:.5;}
+.wp-orb{position:absolute;border-radius:50%;pointer-events:none;filter:blur(22px);opacity:.35;width:70px;height:70px;right:-20px;top:50%;transform:translateY(-50%);}
+.wp-label{font-family:var(--fm);font-size:7px;letter-spacing:.22em;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
+.wp-pnl{font-family:var(--fd);font-size:20px;letter-spacing:.02em;line-height:1}
+.wp-pnl.pos{color:var(--green);text-shadow:0 0 14px var(--green-glow)}
+.wp-pnl.neg{color:var(--red);text-shadow:0 0 14px var(--red-glow)}
+.wp-pnl.zero{color:var(--blue);text-shadow:0 0 14px var(--blue-glow)}
+.wp-pnl.empty{color:var(--text3)}
+.wp-sub{font-family:var(--fm);font-size:9px;color:var(--text3);margin-top:3px}
+.wp-bar{height:2px;border-radius:1px;margin-top:7px;overflow:hidden;background:rgba(255,255,255,0.06)}
+.wp-bar-fill{height:100%;border-radius:1px;transition:width .6s ease}
+
+@media(max-width:768px){
+  #cal-weekly{display:none!important}
+}
 
 /* ── EQUITY CURVE ── */
 #equity-canvas{width:100%;border-radius:var(--r);display:block}
@@ -1233,12 +1263,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <button class="btn btn-glass btn-ic" onclick="calMove(-1)">‹</button>
       <div class="cal-month" id="cal-m"></div>
       <button class="btn btn-glass btn-ic" onclick="calMove(1)">›</button>
+      <button class="btn btn-glass btn-sm" onclick="downloadCalendar()" style="margin-left:8px;gap:5px;font-size:11px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
     </div>
-    <div class="cal-dows">
-      <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
-      <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
+      <div>
+        <div class="cal-dows">
+          <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
+          <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+        </div>
+        <div class="cal-cells mb4" id="cal-cells"></div>
+      </div>
+      <!-- Weekly PnL panels -->
+      <div id="cal-weekly" style="display:flex;flex-direction:column;gap:3px;padding-top:28px"></div>
     </div>
-    <div class="cal-cells mb4" id="cal-cells"></div>
     <div class="g5 mb4" id="cal-stats"></div>
     <div class="g2 mb4">
       <div class="card">
@@ -2412,6 +2452,14 @@ function rCalendar(){
   const today=new Date();
   const calParts=[];
   for(let i=0;i<offset;i++)calParts.push('<div class="cc empty"></div>');
+
+  // Build weekly data as we go
+  // Week starts Mon (offset already handles this). Each row = 7 cells.
+  // We track which dates fall in each visual row.
+  const weekRows=[];
+  let curWeek=[];
+  // push empty slots for first row
+  for(let i=0;i<offset;i++)curWeek.push(null);
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dt=dateTrades(ds);
@@ -2422,8 +2470,48 @@ function rCalendar(){
     const cls=dt.length?(Math.abs(pnl)<=be?'be':pnl>0?'profit':'loss'):'';
     const inner=dt.length?`<div class="cc-pnl ${pnl>0?'p':pnl<0?'n':'z'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="cc-info">${dt.length}t · ${wr}%</div><div class="cc-bar"><div class="cc-bar-fill" style="width:${wr}%"></div></div>`:'';
     calParts.push(`<div class="cc${isT?' today':''}${dt.length?' has-trades':''} ${cls}" onclick="openTradeForm('${ds}')"><div class="cc-num">${d}</div>${inner}</div>`);
+    curWeek.push({d,ds,pnl:dt.length?pnl:null,trades:dt.length});
+    if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
   }
+  if(curWeek.length){weekRows.push([...curWeek]);}
   document.getElementById('cal-cells').innerHTML=calParts.join('');
+
+  // ── Weekly PnL panels ──
+  const allWeekPnls=weekRows.map(week=>{
+    const tradedDays=week.filter(c=>c&&c.pnl!==null);
+    const pnl=tradedDays.reduce((s,c)=>s+c.pnl,0);
+    const trades=tradedDays.reduce((s,c)=>s+c.trades,0);
+    return{pnl,trades,hasTrades:tradedDays.length>0};
+  });
+  const maxAbsPnl=Math.max(...allWeekPnls.map(w=>Math.abs(w.pnl)),1);
+
+  const weekEl=document.getElementById('cal-weekly');
+  if(weekEl){
+    weekEl.innerHTML=allWeekPnls.map((w,i)=>{
+      if(!w.hasTrades){
+        return`<div class="week-panel wp-empty" style="min-height:82px">
+          <div class="wp-label">Week ${i+1}</div>
+          <div class="wp-pnl empty" style="font-size:13px">—</div>
+        </div>`;
+      }
+      const be=S.settings.be||20;
+      const isPos=w.pnl>be,isNeg=w.pnl<-be;
+      const cls=isPos?'wp-pos':isNeg?'wp-neg':'wp-be';
+      const pnlCls=isPos?'pos':isNeg?'neg':'zero';
+      const orbColor=isPos?'rgba(34,211,160,1)':isNeg?'rgba(248,113,113,1)':'rgba(96,165,250,1)';
+      const barColor=isPos?'var(--green)':isNeg?'var(--red)':'var(--blue)';
+      const barW=Math.round(Math.abs(w.pnl)/maxAbsPnl*100);
+      const sign=w.pnl>=0?'+':'';
+      return`<div class="week-panel ${cls}" style="min-height:82px">
+        <div class="wp-orb" style="background:${orbColor}"></div>
+        <div class="wp-label">Week ${i+1}</div>
+        <div class="wp-pnl ${pnlCls}">${sign}$${Math.abs(w.pnl).toFixed(0)}</div>
+        <div class="wp-sub">${w.trades} trade${w.trades!==1?'s':''}</div>
+        <div class="wp-bar"><div class="wp-bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
+      </div>`;
+    }).join('');
+  }
+
   // Stats
   const mT=filterTime(acctTrades(),'month');const ms=getStats(mT);
   const dep=S.deposits.filter(d=>d.account===S.cur&&d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
@@ -2464,6 +2552,41 @@ function rCalendar(){
   }).join('');
 }
 function calMove(d){S.cal.m+=d;if(S.cal.m>11){S.cal.m=0;S.cal.y++;}if(S.cal.m<0){S.cal.m=11;S.cal.y--;}rCalendar();}
+
+function downloadCalendar(){
+  const{y,m}=S.cal;
+  const monthName=MNS[m]+' '+y;
+  toast('Preparing export...');
+  // Load html2canvas if not already loaded
+  if(!window.html2canvas){
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload=()=>_doCapture(monthName);
+    document.head.appendChild(s);
+  } else {
+    _doCapture(monthName);
+  }
+}
+function _doCapture(monthName){
+  // Capture just the calendar page content (everything above the stat cards)
+  const calPage=document.getElementById('page-calendar');
+  html2canvas(calPage,{
+    backgroundColor:'#060810',
+    scale:2,
+    useCORS:true,
+    allowTaint:true,
+    scrollX:0,scrollY:0,
+    windowWidth:calPage.scrollWidth,
+    windowHeight:calPage.scrollHeight,
+    ignoreElements:el=>el.classList.contains('hm-cell')&&false
+  }).then(canvas=>{
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=`YzenNq_${monthName.replace(' ','-')}.png`;
+    a.click();
+    toast('Calendar saved as PNG ✓');
+  }).catch(()=>toast('Export failed — try again'));
+}
 
 // ══════ TRADE FORM ══════
 S.tradeImages=[];
