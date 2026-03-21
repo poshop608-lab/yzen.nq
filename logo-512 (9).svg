@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#060810"/>
+
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#C9A84C" stroke-width="2" opacity="0.2"/>
+  <!-- Mid ring -->
+  <circle cx="256" cy="256" r="175" fill="none" stroke="#C9A84C" stroke-width="1.5" opacity="0.35"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.55"/>
+
+  <!-- Tick marks -->
+  <line x1="256" y1="46" x2="256" y2="28" stroke="#C9A84C" stroke-width="2" opacity="0.5"/>
+  <line x1="256" y1="466" x2="256" y2="484" stroke="#C9A84C" stroke-width="2" opacity="0.5"/>
+  <line x1="46" y1="256" x2="28" y2="256" stroke="#C9A84C" stroke-width="2" opacity="0.5"/>
+  <line x1="466" y1="256" x2="484" y2="256" stroke="#C9A84C" stroke-width="2" opacity="0.5"/>
+
+  <!-- Corner bracket marks -->
+  <path d="M80 120 L80 80 L120 80" fill="none" stroke="#C9A84C" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+  <path d="M432 120 L432 80 L392 80" fill="none" stroke="#C9A84C" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+  <path d="M80 392 L80 432 L120 432" fill="none" stroke="#C9A84C" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+  <path d="M432 392 L432 432 L392 432" fill="none" stroke="#C9A84C" stroke-width="2" opacity="0.45" stroke-linecap="round"/>
+
+  <!-- Subtle cross hair -->
+  <line x1="256" y1="80" x2="256" y2="432" stroke="#C9A84C" stroke-width="0.6" opacity="0.1"/>
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#C9A84C" stroke-width="0.6" opacity="0.1"/>
+
+  <!-- Y letterform - large bold geometric -->
+  <path d="M164 148 L256 268 L348 148" fill="none" stroke="#C9A84C" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="256" y1="268" x2="256" y2="380" stroke="#C9A84C" stroke-width="34" stroke-linecap="round"/>
+
+  <!-- Diamond accent above Y top -->
+  <polygon points="256,118 265,133 256,148 247,133" fill="#C9A84C" opacity="0.7"/>
+
+  <!-- Thin rule below stem -->
+  <line x1="210" y1="394" x2="302" y2="394" stroke="#C9A84C" stroke-width="1.5" opacity="0.4"/>
+</svg>
