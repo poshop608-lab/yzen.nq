@@ -234,66 +234,161 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 
 /* ── CALENDAR ── */
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.cal-month{font-family:var(--fd);font-size:30px;letter-spacing:.04em;background:linear-gradient(135deg,var(--text),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
-.cal-dow{text-align:center;font-family:var(--fm);font-size:8px;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;padding:3px 0}
-.cal-cells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-month{
+  font-family:var(--fd);font-size:32px;letter-spacing:.06em;
+  background:linear-gradient(135deg,#fff8e0,var(--gold),#C9A84C);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(201,168,76,0.4));
+}
+.cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal-dow{
+  text-align:center;font-family:var(--fm);font-size:8px;letter-spacing:.18em;
+  color:rgba(255,255,255,0.22);text-transform:uppercase;padding:4px 0;
+}
+.cal-cells{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cc{
-  min-height:82px;background:var(--g1);border:1px solid var(--bdr);
-  border-radius:var(--r);padding:8px;cursor:pointer;
-  transition:background .15s,border-color .15s,box-shadow .15s;
+  min-height:86px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px;padding:8px;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .15s,box-shadow .15s;
   position:relative;overflow:hidden;
 }
-.cc:hover{background:var(--g2);border-color:var(--bdr2)}
-.cc.today{border-color:var(--gold);box-shadow:0 0 14px var(--gold-dim),inset 0 0 10px var(--gold-dim)}
-.cc.has-trades.profit{border-left:2px solid var(--green);background:rgba(34,211,160,0.04)}
-.cc.has-trades.loss{border-left:2px solid var(--red);background:rgba(248,113,113,0.04)}
-.cc.has-trades.be{border-left:2px solid var(--blue);background:rgba(96,165,250,0.04)}
+.cc::before{
+  content:'';position:absolute;inset:0;border-radius:10px;
+  background:linear-gradient(135deg,rgba(255,255,255,0.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+.cc:hover{
+  background:rgba(255,255,255,0.06);
+  border-color:rgba(255,255,255,0.15);
+  transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(0,0,0,0.3);
+}
+.cc.today{
+  border-color:rgba(201,168,76,0.55);
+  background:rgba(201,168,76,0.05);
+  box-shadow:0 0 18px rgba(201,168,76,0.15),inset 0 0 14px rgba(201,168,76,0.06);
+}
+.cc.today .cc-num{color:var(--gold);text-shadow:0 0 10px rgba(201,168,76,0.6)}
+.cc.has-trades.profit{
+  border-left:2px solid rgba(34,211,160,0.7);
+  background:rgba(34,211,160,0.05);
+}
+.cc.has-trades.profit:hover{box-shadow:0 6px 20px rgba(0,0,0,0.3),0 0 16px rgba(34,211,160,0.1);}
+.cc.has-trades.loss{
+  border-left:2px solid rgba(248,113,113,0.7);
+  background:rgba(248,113,113,0.05);
+}
+.cc.has-trades.loss:hover{box-shadow:0 6px 20px rgba(0,0,0,0.3),0 0 16px rgba(248,113,113,0.1);}
+.cc.has-trades.be{
+  border-left:2px solid rgba(96,165,250,0.6);
+  background:rgba(96,165,250,0.04);
+}
 .cc.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
-.cc-num{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:3px}
-.cc.today .cc-num{color:var(--gold)}
-.cc-pnl{font-family:var(--fm);font-size:10px;font-weight:600}
-.cc-pnl.p{color:var(--green)}.cc-pnl.n{color:var(--red)}.cc-pnl.z{color:var(--blue)}
-.cc-info{font-size:9px;color:var(--text3);font-family:var(--fm);margin-top:1px}
-.cc-bar{height:2px;background:var(--g2);border-radius:1px;margin-top:4px;overflow:hidden}
-.cc-bar-fill{height:100%;border-radius:1px;background:linear-gradient(90deg,#1a9e7a,var(--green))}
+.cc-num{font-size:11px;font-weight:600;color:rgba(255,255,255,0.28);margin-bottom:4px}
+.cc-pnl{font-family:var(--fm);font-size:11px;font-weight:700;line-height:1}
+.cc-pnl.p{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
+.cc-pnl.n{color:var(--red);text-shadow:0 0 10px var(--red-glow)}
+.cc-pnl.z{color:var(--blue)}
+.cc-info{font-size:9px;color:rgba(255,255,255,0.28);font-family:var(--fm);margin-top:2px}
+.cc-bar{height:2px;background:rgba(255,255,255,0.06);border-radius:1px;margin-top:5px;overflow:hidden}
+.cc-bar-fill{height:100%;border-radius:1px;background:linear-gradient(90deg,rgba(34,211,160,0.5),var(--green))}
 
 /* ── WEEKLY PNL PANELS ── */
 #cal-weekly{
-  display:flex;flex-direction:column;gap:3px;
-  padding-top:31px; /* matches .cal-dows height + gap */
+  display:flex;flex-direction:column;gap:4px;
+  padding-top:24px; /* exact height of .cal-dows row: 8px font + 4+4 padding + 4 margin-bottom = 20px + 4px fudge */
 }
 .week-panel{
-  flex:1;
-  width:108px;
-  border-radius:var(--r);
-  padding:8px 10px;
+  flex:1;width:112px;min-height:86px;
+  border-radius:10px;padding:10px 12px;
   position:relative;overflow:hidden;
   display:flex;flex-direction:column;justify-content:center;
   border:1px solid rgba(255,255,255,0.07);
   background:rgba(255,255,255,0.03);
-  transition:transform .15s;
-  min-height:82px;
+  cursor:default;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,border-color .2s,background .2s;
+  will-change:transform;
 }
-.week-panel:hover{transform:translateX(-2px);}
-.week-panel.wp-pos{border-color:rgba(34,211,160,0.3);background:rgba(34,211,160,0.06);}
-.week-panel.wp-neg{border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.06);}
-.week-panel.wp-be{border-color:rgba(96,165,250,0.25);background:rgba(96,165,250,0.05);}
-.week-panel.wp-empty{border-color:rgba(255,255,255,0.04);opacity:.45;}
+/* inner shimmer */
+.week-panel::before{
+  content:'';position:absolute;inset:0;border-radius:10px;
+  background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,transparent 55%);
+  pointer-events:none;opacity:0;transition:opacity .2s;
+}
+.week-panel:hover::before{opacity:1;}
+
+.week-panel.wp-pos{
+  border-color:rgba(34,211,160,0.25);
+  background:rgba(34,211,160,0.05);
+}
+.week-panel.wp-pos:hover{
+  transform:translateX(-4px) scale(1.02);
+  border-color:rgba(34,211,160,0.55);
+  background:rgba(34,211,160,0.1);
+  box-shadow:-6px 0 24px rgba(34,211,160,0.2),0 0 40px rgba(34,211,160,0.1);
+}
+.week-panel.wp-neg{
+  border-color:rgba(248,113,113,0.25);
+  background:rgba(248,113,113,0.05);
+}
+.week-panel.wp-neg:hover{
+  transform:translateX(-4px) scale(1.02);
+  border-color:rgba(248,113,113,0.55);
+  background:rgba(248,113,113,0.1);
+  box-shadow:-6px 0 24px rgba(248,113,113,0.2),0 0 40px rgba(248,113,113,0.1);
+}
+.week-panel.wp-be{
+  border-color:rgba(96,165,250,0.2);
+  background:rgba(96,165,250,0.04);
+}
+.week-panel.wp-be:hover{
+  transform:translateX(-4px) scale(1.02);
+  border-color:rgba(96,165,250,0.5);
+  background:rgba(96,165,250,0.09);
+  box-shadow:-6px 0 24px rgba(96,165,250,0.18),0 0 40px rgba(96,165,250,0.08);
+}
+.week-panel.wp-empty{
+  border-color:rgba(255,255,255,0.04);
+  opacity:.4;
+}
+/* orb inside panel */
 .wp-orb{
   position:absolute;border-radius:50%;pointer-events:none;
-  filter:blur(28px);opacity:.28;
-  width:60px;height:60px;right:-14px;bottom:-14px;
+  filter:blur(24px);
+  width:65px;height:65px;right:-18px;bottom:-18px;
+  transition:opacity .2s,transform .2s;
 }
-.wp-label{font-family:var(--fm);font-size:7px;letter-spacing:.22em;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
-.wp-pnl{font-family:var(--fd);font-size:18px;letter-spacing:.02em;line-height:1}
-.wp-pnl.pos{color:var(--green);text-shadow:0 0 16px var(--green-glow),0 0 32px rgba(34,211,160,0.2)}
-.wp-pnl.neg{color:var(--red);text-shadow:0 0 16px var(--red-glow),0 0 32px rgba(248,113,113,0.2)}
-.wp-pnl.zero{color:var(--blue);text-shadow:0 0 16px var(--blue-glow)}
-.wp-pnl.empty{color:var(--text3);font-size:14px}
-.wp-sub{font-family:var(--fm);font-size:9px;color:var(--text3);margin-top:3px}
-.wp-bar{height:2px;border-radius:1px;margin-top:6px;overflow:hidden;background:rgba(255,255,255,0.06)}
-.wp-bar-fill{height:100%;border-radius:1px;}
+.week-panel:hover .wp-orb{opacity:.55!important;transform:scale(1.2);}
+.wp-label{
+  font-family:var(--fm);font-size:7px;letter-spacing:.25em;
+  color:rgba(255,255,255,0.28);text-transform:uppercase;margin-bottom:5px;
+}
+.wp-pnl{
+  font-family:var(--fd);font-size:20px;letter-spacing:.02em;line-height:1;
+  transition:text-shadow .2s;
+}
+.wp-pnl.pos{
+  color:var(--green);
+  text-shadow:0 0 14px var(--green-glow),0 0 28px rgba(34,211,160,0.15);
+}
+.week-panel:hover .wp-pnl.pos{
+  text-shadow:0 0 20px var(--green-glow),0 0 40px rgba(34,211,160,0.3),0 0 60px rgba(34,211,160,0.1);
+}
+.wp-pnl.neg{
+  color:var(--red);
+  text-shadow:0 0 14px var(--red-glow),0 0 28px rgba(248,113,113,0.15);
+}
+.week-panel:hover .wp-pnl.neg{
+  text-shadow:0 0 20px var(--red-glow),0 0 40px rgba(248,113,113,0.3),0 0 60px rgba(248,113,113,0.1);
+}
+.wp-pnl.zero{color:var(--blue);text-shadow:0 0 14px var(--blue-glow)}
+.week-panel:hover .wp-pnl.zero{text-shadow:0 0 20px var(--blue-glow),0 0 40px rgba(96,165,250,0.25)}
+.wp-pnl.empty{color:rgba(255,255,255,0.2);font-size:16px}
+.wp-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,0.28);margin-top:3px}
+.wp-bar{height:2px;border-radius:1px;margin-top:8px;overflow:hidden;background:rgba(255,255,255,0.06)}
+.wp-bar-fill{height:100%;border-radius:1px;transition:width .5s ease}
 
 @media(max-width:900px){
   #cal-weekly{display:none!important}
@@ -1280,7 +1375,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         Export
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 108px;gap:6px;align-items:stretch;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 112px;gap:6px;align-items:start;margin-bottom:16px">
       <div>
         <div class="cal-dows">
           <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
@@ -1288,7 +1383,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
         <div class="cal-cells" id="cal-cells"></div>
       </div>
-      <div id="cal-weekly"></div>
+      <!-- Weekly panels sit here, DOW labels spacer handled by padding-top in CSS -->
+      <div id="cal-weekly" style="margin-top:0"></div>
     </div>
     <div class="g5 mb4" id="cal-stats"></div>
     <div class="g2 mb4">
@@ -2479,7 +2575,7 @@ function rCalendar(){
     const isT=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
     const be=S.settings.be||20;
     const cls=dt.length?(Math.abs(pnl)<=be?'be':pnl>0?'profit':'loss'):'';
-    const inner=dt.length?`<div class="cc-pnl ${pnl>0?'p':pnl<0?'n':'z'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="cc-info">${dt.length}t · ${wr}%</div><div class="cc-bar"><div class="cc-bar-fill" style="width:${wr}%"></div></div>`:'';
+    const inner=dt.length?`<div class="cc-pnl ${pnl>0?'p':pnl<0?'n':'z'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="cc-info">${dt.length}T · ${wr}%</div><div class="cc-bar"><div class="cc-bar-fill" style="width:${wr}%"></div></div>`:'';
     calParts.push(`<div class="cc${isT?' today':''}${dt.length?' has-trades':''} ${cls}" onclick="openTradeForm('${ds}')"><div class="cc-num">${d}</div>${inner}</div>`);
     curWeek.push({d,ds,pnl:dt.length?pnl:null,trades:dt.length});
     if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
@@ -2487,11 +2583,9 @@ function rCalendar(){
   if(curWeek.length){weekRows.push([...curWeek]);}
   document.getElementById('cal-cells').innerHTML=calParts.join('');
 
-  // ── Weekly PnL panels — one per visual calendar ROW ──
-  // Each row = 7 grid cells. weekRows already built correctly above.
-  // Filter out any trailing incomplete-but-all-null rows (shouldn't happen but safe)
-  const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null));
-  const numWeeks=realWeekRows.length; // 4 or 5, never 6
+  // ── Weekly PnL panels — one per visual calendar ROW that has real days ──
+  const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
+  const numWeeks=realWeekRows.length;
 
   const allWeekPnls=realWeekRows.map(week=>{
     const tradedDays=week.filter(c=>c&&c.pnl!==null);
@@ -2519,7 +2613,7 @@ function rCalendar(){
       const barW=Math.round(Math.abs(w.pnl)/maxAbsPnl*100);
       const sign=w.pnl>=0?'+':'';
       return`<div class="week-panel ${cls}">
-        <div class="wp-orb" style="background:${orbColor}"></div>
+        <div class="wp-orb" style="background:${orbColor};opacity:.32;"></div>
         <div class="wp-label">W${i+1}</div>
         <div class="wp-pnl ${pnlCls}">${sign}$${Math.abs(w.pnl).toFixed(0)}</div>
         <div class="wp-sub">${w.trades}t</div>
@@ -2596,7 +2690,7 @@ function downloadCalendar(){
     if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
   });
   if(curWeek.length)weekRows.push([...curWeek]);
-  const realWeeks=weekRows.filter(w=>w.some(c=>c!==null));
+  const realWeeks=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
   const numWeeks=realWeeks.length;
 
   const weekPnls=realWeeks.map(week=>{
@@ -2644,7 +2738,7 @@ function downloadCalendar(){
 
   ctx.font='400 11px DM Mono,monospace';
   ctx.fillStyle='rgba(255,255,255,0.28)';
-  ctx.fillText(S.cur+' · '+mT.length+' trades · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),PAD,hY+18);
+  ctx.fillText(mT.length+' trades · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),PAD,hY+18);
 
   // Gold line under header
   const grad=ctx.createLinearGradient(PAD,0,totalW-PAD,0);
@@ -2761,9 +2855,12 @@ function downloadCalendar(){
       else ctx.strokeStyle='rgba(96,165,250,0.3)';
       ctx.lineWidth=1;roundRect(ctx,wx,wy2,ww,wh,8);ctx.stroke();
 
-      // orb in corner
-      const orbColor=wIsPos?'rgba(34,211,160,0.5)':wIsNeg?'rgba(248,113,113,0.5)':'rgba(96,165,250,0.5)';
-      drawOrb(wx+ww-10,wy2+wh,40,orbColor);
+      // panel orb - clipped to panel bounds so it doesn't bleed
+      const orbColor=wIsPos?'rgba(34,211,160,0.55)':wIsNeg?'rgba(248,113,113,0.55)':'rgba(96,165,250,0.5)';
+      ctx.save();
+      roundRect(ctx,wx,wy2,ww,wh,8);ctx.clip();
+      drawOrb(wx+ww,wy2+wh,50,orbColor);
+      ctx.restore();
 
       // week label
       ctx.textAlign='left';
@@ -2803,14 +2900,14 @@ function downloadCalendar(){
     {label:'MONTH P&L',val:(ms.pnl>=0?'+':'')+'$'+Math.abs(ms.pnl).toFixed(0),color:ms.pnl>=0?'#22d3a0':'#f87171',glow:ms.pnl>=0?'rgba(34,211,160,0.5)':'rgba(248,113,113,0.5)'},
     {label:'WIN RATE',val:ms.wr.toFixed(1)+'%',color:'#C9A84C',glow:'rgba(201,168,76,0.5)'},
     {label:'AVG R:R',val:ms.avgRR.toFixed(2)+'R',color:'#f0ead8',glow:'rgba(255,255,255,0.2)'},
-    {label:'MAX DD',val:'-$'+ms.maxDD.toFixed(0),color:'#f87171',glow:'rgba(248,113,113,0.4)'},
   ];
+  const sw3=(totalW-PAD*2)/3-8;
   statData.forEach((st,i)=>{
-    const sx=PAD+i*(sw+8);
+    const sx=PAD+i*(sw3+8);
     ctx.fillStyle='rgba(255,255,255,0.04)';
-    roundRect(ctx,sx,statsY,sw,60,8);ctx.fill();
+    roundRect(ctx,sx,statsY,sw3,60,8);ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
-    roundRect(ctx,sx,statsY,sw,60,8);ctx.stroke();
+    roundRect(ctx,sx,statsY,sw3,60,8);ctx.stroke();
 
     ctx.textAlign='left';
     ctx.font='500 8px DM Mono,monospace';
@@ -2824,12 +2921,14 @@ function downloadCalendar(){
     ctx.shadowBlur=0;
   });
 
-  // Download
+  // Smart filename: UserName_MonthlyReport_March2026_+$3677
+  const userName=(currentUser?.user_metadata?.full_name||currentUser?.email?.split('@')[0]||'YzenNq').replace(/\s+/g,'');
+  const fileName=`${userName}_${MNS[m]}${y}.png`;
   const a=document.createElement('a');
   a.href=canvas.toDataURL('image/png');
-  a.download='YzenNq_'+monthName.replace(' ','-')+'.png';
+  a.download=fileName;
   a.click();
-  toast('Calendar exported as PNG ✓');
+  toast('Saved as '+fileName+' ✓');
 }
 
 function roundRect(ctx,x,y,w,h,r){
