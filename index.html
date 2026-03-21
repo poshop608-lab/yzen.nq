@@ -356,11 +356,11 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 /* orb inside panel */
 .wp-orb{
   position:absolute;border-radius:50%;pointer-events:none;
-  filter:blur(24px);
+  filter:blur(28px);
   width:65px;height:65px;right:-18px;bottom:-18px;
   transition:opacity .2s,transform .2s;
 }
-.week-panel:hover .wp-orb{opacity:.42!important;transform:scale(1.1);}
+.week-panel:hover .wp-orb{opacity:.28!important;transform:scale(1.05);}
 .wp-label{
   font-family:var(--fm);font-size:7px;letter-spacing:.25em;
   color:rgba(255,255,255,0.28);text-transform:uppercase;margin-bottom:5px;
@@ -2575,7 +2575,7 @@ function rCalendar(){
     const isT=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
     const be=S.settings.be||20;
     const cls=dt.length?(Math.abs(pnl)<=be?'be':pnl>0?'profit':'loss'):'';
-    const inner=dt.length?`<div class="cc-pnl ${pnl>0?'p':pnl<0?'n':'z'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="cc-info">${dt.length}T · ${wr}%</div><div class="cc-bar"><div class="cc-bar-fill" style="width:${wr}%"></div></div>`:'';
+    const inner=dt.length?`<div class="cc-pnl ${pnl>0?'p':pnl<0?'n':'z'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="cc-info">${dt.length}T · ${wr}%WR</div><div class="cc-bar"><div class="cc-bar-fill" style="width:${wr}%"></div></div>`:'';
     calParts.push(`<div class="cc${isT?' today':''}${dt.length?' has-trades':''} ${cls}" onclick="openTradeForm('${ds}')"><div class="cc-num">${d}</div>${inner}</div>`);
     curWeek.push({d,ds,pnl:dt.length?pnl:null,trades:dt.length});
     if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
@@ -2586,12 +2586,14 @@ function rCalendar(){
   // ── Weekly PnL panels — one per visual calendar ROW that has real days ──
   const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
   const numWeeks=realWeekRows.length;
-  // Trim trailing empty weeks (no trades at end of month)
+  // Only trim trailing weeks if they have no trades AND are beyond current date
+  const todayDate=today.getFullYear()===y&&today.getMonth()===m?today.getDate():days+1;
   let displayWeeks=[...realWeekRows];
   while(displayWeeks.length>1){
     const last=displayWeeks[displayWeeks.length-1];
-    const hasTrades=last.some(c=>c&&c.pnl!==null&&c.trades>0);
-    if(!hasTrades)displayWeeks.pop();else break;
+    const hasTrades=last.some(c=>c&&c.trades>0);
+    const hasFutureDays=last.some(c=>c&&c.d&&c.d>=todayDate);
+    if(!hasTrades&&!hasFutureDays)displayWeeks.pop();else break;
   }
 
   const allWeekPnls=displayWeeks.map(week=>{
@@ -2620,7 +2622,7 @@ function rCalendar(){
       const barW=Math.round(Math.abs(w.pnl)/maxAbsPnl*100);
       const sign=w.pnl>=0?'+':'';
       return`<div class="week-panel ${cls}">
-        <div class="wp-orb" style="background:${orbColor};opacity:.32;"></div>
+        <div class="wp-orb" style="background:${orbColor};opacity:.18;"></div>
         <div class="wp-label">W${i+1}</div>
         <div class="wp-pnl ${pnlCls}">${sign}$${Math.abs(w.pnl).toFixed(0)}</div>
         <div class="wp-sub">${w.trades}t</div>
@@ -2833,7 +2835,7 @@ function downloadCalendar(){
         // sub info
         ctx.font='400 9px DM Mono,monospace';
         ctx.fillStyle='rgba(255,255,255,0.3)';
-        ctx.fillText(day.trades+'t · '+day.wr+'%',cx+8,cy+55);
+        ctx.fillText(day.trades+'T · '+day.wr+'%WR',cx+8,cy+55);
 
         // wr bar
         const barY=cy+ch-10;
