@@ -2739,13 +2739,14 @@ function downloadCalendar(){
     return{pnl:td.reduce((s,c)=>s+c.pnl,0),trades:td.reduce((s,c)=>s+c.trades,0),has:td.length>0};
   });
 
-  // Canvas setup
-  const COLS=7,WK_W=120,PAD=32,GAP=4;
-  const TOP_H=100,STATS_H=80,CAL_H_PER_ROW=90;
-  const calW=800;
-  const cellW=Math.floor((calW-WK_W-GAP-(COLS-1)*GAP)/COLS);
-  const totalW=PAD*2+calW;
-  const totalH=PAD+TOP_H+24+(numWeeks*(CAL_H_PER_ROW+GAP))+STATS_H+PAD;
+  // Canvas setup — fixed, generous sizing
+  const COLS=7,WK_W=110,PAD=36,GAP=5;
+  const TOP_H=110,STATS_H=90,CAL_H_PER_ROW=95;
+  const DOW_H=22;
+  const cellW=118; // fixed cell width — predictable
+  const calW=COLS*cellW+(COLS-1)*GAP; // 7*118 + 6*5 = 856
+  const totalW=PAD*2+calW+GAP+WK_W; // 36+36+856+5+110 = 1079
+  const totalH=PAD+TOP_H+DOW_H+GAP+(numWeeks*(CAL_H_PER_ROW+GAP))+STATS_H+PAD;
 
   const canvas=document.createElement('canvas');
   canvas.width=totalW*2;canvas.height=totalH*2;
@@ -2792,20 +2793,21 @@ function downloadCalendar(){
   // Day of week headers
   const DOWS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
   const calX=PAD,calY=TOP_H+PAD;
-  ctx.font='500 9px DM Mono,monospace';
-  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.font='600 9px DM Mono,monospace';
+  ctx.fillStyle='rgba(255,255,255,0.25)';
   DOWS.forEach((d,i)=>{
     const x=calX+i*(cellW+GAP)+cellW/2;
     ctx.textAlign='center';
-    ctx.fillText(d,x,calY);
+    ctx.fillText(d,x,calY+DOW_H/2+4);
   });
 
   // Calendar cells
-  const cellStartY=calY+16;
+  const cellStartY=calY+DOW_H+GAP;
   let cellIdx=0;
   realWeeks.forEach((week,wi)=>{
     const wy=cellStartY+wi*(CAL_H_PER_ROW+GAP);
-    week.forEach((day,di)=>{
+    // only draw first 7 slots (overflow days already merged into pnl, no extra cells)
+    week.slice(0,7).forEach((day,di)=>{
       const cx=calX+di*(cellW+GAP);
       const cy=wy;
       const cw=cellW,ch=CAL_H_PER_ROW;
@@ -2863,7 +2865,7 @@ function downloadCalendar(){
         // sub info
         ctx.font='500 10px DM Mono,monospace';
         ctx.fillStyle='rgba(255,255,255,0.45)';
-        ctx.fillText(day.trades+'T · '+day.wr+'%',cx+8,cy+56);
+        ctx.fillText(day.trades+'T · '+day.wr+'%WR',cx+8,cy+56);
 
         // wr bar
         const barY=cy+ch-10;
@@ -2876,7 +2878,7 @@ function downloadCalendar(){
 
     // Weekly panel
     const wp=weekPnls[wi];
-    const wx=calX+7*(cellW+GAP);
+    const wx=calX+COLS*(cellW+GAP);
     const wy2=wy,wh=CAL_H_PER_ROW;
     const ww=WK_W-GAP;
 
