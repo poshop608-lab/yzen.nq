@@ -298,7 +298,7 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 /* ── WEEKLY PNL PANELS ── */
 #cal-weekly{
   display:flex;flex-direction:column;gap:4px;
-  padding-top:24px; /* exact height of .cal-dows row: 8px font + 4+4 padding + 4 margin-bottom = 20px + 4px fudge */
+  padding-top:20px;
 }
 .week-panel{
   flex:1;width:112px;min-height:86px;
@@ -1375,7 +1375,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         Export
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 112px;gap:6px;align-items:start;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 112px;gap:6px;align-items:start;margin-bottom:0">
       <div>
         <div class="cal-dows">
           <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
@@ -1383,10 +1383,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         </div>
         <div class="cal-cells" id="cal-cells"></div>
       </div>
-      <!-- Weekly panels sit here, DOW labels spacer handled by padding-top in CSS -->
       <div id="cal-weekly" style="margin-top:0"></div>
     </div>
-    <div class="g5 mb3" id="cal-stats"></div>
+    <div class="g5 mb3" id="cal-stats" style="margin-top:12px"></div>
     <div class="g2 mb4">
       <div class="card">
         <div class="sec-title">Monthly Streak</div>
@@ -2586,14 +2585,14 @@ function rCalendar(){
   // ── Weekly PnL panels — one per visual calendar ROW that has real days ──
   const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null&&c.d));
   const numWeeks=realWeekRows.length;
-  // Only trim trailing weeks if they have no trades AND are beyond current date
-  const todayDate=today.getFullYear()===y&&today.getMonth()===m?today.getDate():days+1;
+  // Only trim trailing week panels that have no trades AND all days are after today
+  const todayD=today.getFullYear()===y&&today.getMonth()===m?today.getDate():days+1;
   let displayWeeks=[...realWeekRows];
   while(displayWeeks.length>1){
     const last=displayWeeks[displayWeeks.length-1];
     const hasTrades=last.some(c=>c&&c.trades>0);
-    const hasFutureDays=last.some(c=>c&&c.d&&c.d>=todayDate);
-    if(!hasTrades&&!hasFutureDays)displayWeeks.pop();else break;
+    const hasPassedDay=last.some(c=>c&&c.d&&c.d<=todayD);
+    if(!hasTrades&&!hasPassedDay)displayWeeks.pop();else break;
   }
 
   const allWeekPnls=displayWeeks.map(week=>{
@@ -2625,10 +2624,35 @@ function rCalendar(){
         <div class="wp-orb" style="background:${orbColor};opacity:.18;"></div>
         <div class="wp-label">W${i+1}</div>
         <div class="wp-pnl ${pnlCls}">${sign}$${Math.abs(w.pnl).toFixed(0)}</div>
-        <div class="wp-sub">${w.trades}t</div>
+        <div class="wp-sub">${w.trades}T</div>
         <div class="wp-bar"><div class="wp-bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
       </div>`;
     }).join('');
+    // ── ALIGNMENT FIX: match each panel height to its calendar row ──
+    requestAnimationFrame(()=>{
+      const cells=document.querySelectorAll('#cal-cells .cc:not(.empty)');
+      const rows=[];
+      let rowStart=0;
+      // Group cells into rows of 7 (by their offsetTop)
+      const calCellsEl=document.getElementById('cal-cells');
+      if(!calCellsEl)return;
+      const allCells=[...calCellsEl.children];
+      let prevTop=-1,rowH=[];
+      allCells.forEach(c=>{
+        const top=c.getBoundingClientRect().top;
+        if(top!==prevTop&&prevTop!==-1){rows.push(rowH);rowH=[];}
+        rowH.push(c.getBoundingClientRect().height);
+        prevTop=top;
+      });
+      if(rowH.length)rows.push(rowH);
+      const panels=[...weekEl.children];
+      panels.forEach((p,i)=>{
+        const rh=rows[i]?Math.max(...rows[i]):86;
+        p.style.height=rh+'px';
+        p.style.minHeight=rh+'px';
+        p.style.flex='none';
+      });
+    });
   }
 
   // Stats
@@ -2828,7 +2852,7 @@ function downloadCalendar(){
         ctx.font='700 13px DM Mono,monospace';
         ctx.fillStyle=isPos?'#22d3a0':isNeg?'#f87171':'#60a5fa';
         ctx.shadowColor=isPos?'rgba(34,211,160,0.6)':isNeg?'rgba(248,113,113,0.6)':'rgba(96,165,250,0.5)';
-        ctx.shadowBlur=8;
+        ctx.shadowBlur=4;
         ctx.fillText(pnlStr,cx+8,cy+40);
         ctx.shadowBlur=0;
 
@@ -2887,7 +2911,7 @@ function downloadCalendar(){
       ctx.font='700 16px Bebas Neue,serif';
       ctx.fillStyle=wIsPos?'#22d3a0':wIsNeg?'#f87171':'#60a5fa';
       ctx.shadowColor=wIsPos?'rgba(34,211,160,0.7)':wIsNeg?'rgba(248,113,113,0.7)':'rgba(96,165,250,0.6)';
-      ctx.shadowBlur=10;
+      ctx.shadowBlur=5;
       ctx.fillText(str,wx+8,wy2+40);
       ctx.shadowBlur=0;
 
@@ -2929,7 +2953,7 @@ function downloadCalendar(){
 
     ctx.font='700 22px Bebas Neue,serif';
     ctx.fillStyle=st.color;
-    ctx.shadowColor=st.glow;ctx.shadowBlur=12;
+    ctx.shadowColor=st.glow;ctx.shadowBlur=6;
     ctx.fillText(st.val,sx+10,statsY+46);
     ctx.shadowBlur=0;
   });
