@@ -4829,27 +4829,50 @@ function initAuth(){
 <script>
 // ── PWA Install ──
 let _pwaPrompt=null;
+
+function showInstallBtn(){
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='flex';
+}
+function hideInstallBtn(){
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='none';
+}
+
+// Chrome/Edge desktop & Android
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   _pwaPrompt=e;
-  // Show install button in topbar
-  const btn=document.getElementById('pwa-install-btn');
-  if(btn)btn.style.display='flex';
+  showInstallBtn();
 });
+
 window.addEventListener('appinstalled',()=>{
   _pwaPrompt=null;
-  const btn=document.getElementById('pwa-install-btn');
-  if(btn)btn.style.display='none';
+  hideInstallBtn();
+  toast('✓ YzenNq installed successfully!');
 });
+
 async function installPWA(){
-  if(!_pwaPrompt)return;
-  _pwaPrompt.prompt();
-  const{outcome}=await _pwaPrompt.userChoice;
-  if(outcome==='accepted')_pwaPrompt=null;
+  if(_pwaPrompt){
+    _pwaPrompt.prompt();
+    const{outcome}=await _pwaPrompt.userChoice;
+    if(outcome==='accepted'){_pwaPrompt=null;hideInstallBtn();}
+  } else {
+    // Fallback: guide user manually
+    const ua=navigator.userAgent;
+    if(/iPhone|iPad/.test(ua)){
+      alert('To install on iOS:\n\n1. Tap the Share button (□↑) at the bottom\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"');
+    } else {
+      alert('To install:\n\nClick the install icon (⊕) in your browser address bar on the right side, then click "Install".');
+    }
+  }
 }
+
 // ── Service Worker ──
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js')
+    .then(()=>console.log('[PWA] Service worker registered'))
+    .catch(e=>console.log('[PWA] SW error:',e));
 }
 </script>
 </body>
