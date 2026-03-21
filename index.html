@@ -259,31 +259,43 @@ nav{flex:1;padding:8px 0;overflow-y:auto}
 .cc-bar-fill{height:100%;border-radius:1px;background:linear-gradient(90deg,#1a9e7a,var(--green))}
 
 /* ── WEEKLY PNL PANELS ── */
+#cal-weekly{
+  display:flex;flex-direction:column;gap:3px;
+  padding-top:31px; /* matches .cal-dows height + gap */
+}
 .week-panel{
-  width:110px;min-height:82px;border-radius:var(--r);padding:10px 12px;
+  flex:1;
+  width:108px;
+  border-radius:var(--r);
+  padding:8px 10px;
   position:relative;overflow:hidden;
   display:flex;flex-direction:column;justify-content:center;
   border:1px solid rgba(255,255,255,0.07);
   background:rgba(255,255,255,0.03);
-  transition:transform .18s,box-shadow .18s;
+  transition:transform .15s;
+  min-height:82px;
 }
 .week-panel:hover{transform:translateX(-2px);}
-.week-panel.wp-pos{border-color:rgba(34,211,160,0.25);background:rgba(34,211,160,0.05);}
-.week-panel.wp-neg{border-color:rgba(248,113,113,0.25);background:rgba(248,113,113,0.05);}
-.week-panel.wp-be{border-color:rgba(96,165,250,0.2);background:rgba(96,165,250,0.04);}
-.week-panel.wp-empty{border-color:rgba(255,255,255,0.05);opacity:.5;}
-.wp-orb{position:absolute;border-radius:50%;pointer-events:none;filter:blur(22px);opacity:.35;width:70px;height:70px;right:-20px;top:50%;transform:translateY(-50%);}
-.wp-label{font-family:var(--fm);font-size:7px;letter-spacing:.22em;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
-.wp-pnl{font-family:var(--fd);font-size:20px;letter-spacing:.02em;line-height:1}
-.wp-pnl.pos{color:var(--green);text-shadow:0 0 14px var(--green-glow)}
-.wp-pnl.neg{color:var(--red);text-shadow:0 0 14px var(--red-glow)}
-.wp-pnl.zero{color:var(--blue);text-shadow:0 0 14px var(--blue-glow)}
-.wp-pnl.empty{color:var(--text3)}
+.week-panel.wp-pos{border-color:rgba(34,211,160,0.3);background:rgba(34,211,160,0.06);}
+.week-panel.wp-neg{border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.06);}
+.week-panel.wp-be{border-color:rgba(96,165,250,0.25);background:rgba(96,165,250,0.05);}
+.week-panel.wp-empty{border-color:rgba(255,255,255,0.04);opacity:.45;}
+.wp-orb{
+  position:absolute;border-radius:50%;pointer-events:none;
+  filter:blur(28px);opacity:.28;
+  width:60px;height:60px;right:-14px;bottom:-14px;
+}
+.wp-label{font-family:var(--fm);font-size:7px;letter-spacing:.22em;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.wp-pnl{font-family:var(--fd);font-size:18px;letter-spacing:.02em;line-height:1}
+.wp-pnl.pos{color:var(--green);text-shadow:0 0 16px var(--green-glow),0 0 32px rgba(34,211,160,0.2)}
+.wp-pnl.neg{color:var(--red);text-shadow:0 0 16px var(--red-glow),0 0 32px rgba(248,113,113,0.2)}
+.wp-pnl.zero{color:var(--blue);text-shadow:0 0 16px var(--blue-glow)}
+.wp-pnl.empty{color:var(--text3);font-size:14px}
 .wp-sub{font-family:var(--fm);font-size:9px;color:var(--text3);margin-top:3px}
-.wp-bar{height:2px;border-radius:1px;margin-top:7px;overflow:hidden;background:rgba(255,255,255,0.06)}
-.wp-bar-fill{height:100%;border-radius:1px;transition:width .6s ease}
+.wp-bar{height:2px;border-radius:1px;margin-top:6px;overflow:hidden;background:rgba(255,255,255,0.06)}
+.wp-bar-fill{height:100%;border-radius:1px;}
 
-@media(max-width:768px){
+@media(max-width:900px){
   #cal-weekly{display:none!important}
 }
 
@@ -1268,16 +1280,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
         Export
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
+    <div style="display:grid;grid-template-columns:1fr 108px;gap:6px;align-items:stretch;margin-bottom:16px">
       <div>
         <div class="cal-dows">
           <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
           <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
         </div>
-        <div class="cal-cells mb4" id="cal-cells"></div>
+        <div class="cal-cells" id="cal-cells"></div>
       </div>
-      <!-- Weekly PnL panels -->
-      <div id="cal-weekly" style="display:flex;flex-direction:column;gap:3px;padding-top:28px"></div>
+      <div id="cal-weekly"></div>
     </div>
     <div class="g5 mb4" id="cal-stats"></div>
     <div class="g2 mb4">
@@ -2476,8 +2487,13 @@ function rCalendar(){
   if(curWeek.length){weekRows.push([...curWeek]);}
   document.getElementById('cal-cells').innerHTML=calParts.join('');
 
-  // ── Weekly PnL panels ──
-  const allWeekPnls=weekRows.map(week=>{
+  // ── Weekly PnL panels — one per visual calendar ROW ──
+  // Each row = 7 grid cells. weekRows already built correctly above.
+  // Filter out any trailing incomplete-but-all-null rows (shouldn't happen but safe)
+  const realWeekRows=weekRows.filter(w=>w.some(c=>c!==null));
+  const numWeeks=realWeekRows.length; // 4 or 5, never 6
+
+  const allWeekPnls=realWeekRows.map(week=>{
     const tradedDays=week.filter(c=>c&&c.pnl!==null);
     const pnl=tradedDays.reduce((s,c)=>s+c.pnl,0);
     const trades=tradedDays.reduce((s,c)=>s+c.trades,0);
@@ -2489,9 +2505,9 @@ function rCalendar(){
   if(weekEl){
     weekEl.innerHTML=allWeekPnls.map((w,i)=>{
       if(!w.hasTrades){
-        return`<div class="week-panel wp-empty" style="min-height:82px">
-          <div class="wp-label">Week ${i+1}</div>
-          <div class="wp-pnl empty" style="font-size:13px">—</div>
+        return`<div class="week-panel wp-empty">
+          <div class="wp-label">W${i+1}</div>
+          <div class="wp-pnl empty">—</div>
         </div>`;
       }
       const be=S.settings.be||20;
@@ -2502,11 +2518,11 @@ function rCalendar(){
       const barColor=isPos?'var(--green)':isNeg?'var(--red)':'var(--blue)';
       const barW=Math.round(Math.abs(w.pnl)/maxAbsPnl*100);
       const sign=w.pnl>=0?'+':'';
-      return`<div class="week-panel ${cls}" style="min-height:82px">
+      return`<div class="week-panel ${cls}">
         <div class="wp-orb" style="background:${orbColor}"></div>
-        <div class="wp-label">Week ${i+1}</div>
+        <div class="wp-label">W${i+1}</div>
         <div class="wp-pnl ${pnlCls}">${sign}$${Math.abs(w.pnl).toFixed(0)}</div>
-        <div class="wp-sub">${w.trades} trade${w.trades!==1?'s':''}</div>
+        <div class="wp-sub">${w.trades}t</div>
         <div class="wp-bar"><div class="wp-bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
       </div>`;
     }).join('');
@@ -2555,37 +2571,274 @@ function calMove(d){S.cal.m+=d;if(S.cal.m>11){S.cal.m=0;S.cal.y++;}if(S.cal.m<0)
 
 function downloadCalendar(){
   const{y,m}=S.cal;
-  const monthName=MNS[m]+' '+y;
-  toast('Preparing export...');
-  // Load html2canvas if not already loaded
-  if(!window.html2canvas){
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-    s.onload=()=>_doCapture(monthName);
-    document.head.appendChild(s);
-  } else {
-    _doCapture(monthName);
+  const monthName=MNS[m].toUpperCase()+' '+y;
+  const first=new Date(y,m,1).getDay(),offset=first===0?6:first-1;
+  const days=new Date(y,m+1,0).getDate();
+  const mT=filterTime(acctTrades(),'month');
+  const ms=getStats(mT);
+  const be=S.settings.be||20;
+
+  // Build day data
+  const dayData=[];
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt=dateTrades(ds);
+    const pnl=dt.reduce((s,t)=>s+(parseFloat(t.pnl)||0),0);
+    const wr=dt.length?Math.round(dt.filter(t=>t.outcome==='win').length/dt.length*100):0;
+    dayData.push({d,pnl:dt.length?pnl:null,trades:dt.length,wr});
   }
+
+  // Build week rows
+  const weekRows=[];let curWeek=[];
+  for(let i=0;i<offset;i++)curWeek.push(null);
+  dayData.forEach(day=>{
+    curWeek.push(day);
+    if(curWeek.length===7){weekRows.push([...curWeek]);curWeek=[];}
+  });
+  if(curWeek.length)weekRows.push([...curWeek]);
+  const realWeeks=weekRows.filter(w=>w.some(c=>c!==null));
+  const numWeeks=realWeeks.length;
+
+  const weekPnls=realWeeks.map(week=>{
+    const td=week.filter(c=>c&&c.pnl!==null);
+    return{pnl:td.reduce((s,c)=>s+c.pnl,0),trades:td.reduce((s,c)=>s+c.trades,0),has:td.length>0};
+  });
+
+  // Canvas setup
+  const COLS=7,WK_W=120,PAD=32,GAP=4;
+  const TOP_H=100,STATS_H=80,CAL_H_PER_ROW=90;
+  const calW=800;
+  const cellW=Math.floor((calW-WK_W-GAP-(COLS-1)*GAP)/COLS);
+  const totalW=PAD*2+calW;
+  const totalH=PAD+TOP_H+24+(numWeeks*(CAL_H_PER_ROW+GAP))+STATS_H+PAD;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=totalW*2;canvas.height=totalH*2;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(2,2);
+
+  // Background
+  ctx.fillStyle='#060810';
+  ctx.fillRect(0,0,totalW,totalH);
+
+  // Background orbs
+  function drawOrb(cx,cy,r,color){
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,color);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  }
+  drawOrb(80,80,220,'rgba(201,168,76,0.12)');
+  drawOrb(totalW-80,totalH-80,250,'rgba(96,165,250,0.09)');
+  drawOrb(totalW*0.7,totalH*0.35,180,'rgba(34,211,160,0.07)');
+
+  // Header
+  const hY=PAD+52;
+  ctx.font='500 11px DM Mono,monospace';
+  ctx.fillStyle='rgba(201,168,76,0.5)';
+  ctx.letterSpacing='0.25em';
+  ctx.fillText('YZENNQ · PRO TRADING JOURNAL',PAD,PAD+18);
+
+  ctx.font='700 38px Bebas Neue,serif';
+  ctx.fillStyle='#f0ead8';
+  ctx.fillText(monthName,PAD,hY);
+
+  ctx.font='400 11px DM Mono,monospace';
+  ctx.fillStyle='rgba(255,255,255,0.28)';
+  ctx.fillText(S.cur+' · '+mT.length+' trades · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),PAD,hY+18);
+
+  // Gold line under header
+  const grad=ctx.createLinearGradient(PAD,0,totalW-PAD,0);
+  grad.addColorStop(0,'rgba(201,168,76,0.6)');
+  grad.addColorStop(0.5,'rgba(201,168,76,0.2)');
+  grad.addColorStop(1,'transparent');
+  ctx.strokeStyle=grad;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(PAD,hY+28);ctx.lineTo(totalW-PAD,hY+28);ctx.stroke();
+
+  // Day of week headers
+  const DOWS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const calX=PAD,calY=TOP_H+PAD;
+  ctx.font='500 9px DM Mono,monospace';
+  ctx.fillStyle='rgba(255,255,255,0.22)';
+  DOWS.forEach((d,i)=>{
+    const x=calX+i*(cellW+GAP)+cellW/2;
+    ctx.textAlign='center';
+    ctx.fillText(d,x,calY);
+  });
+
+  // Calendar cells
+  const cellStartY=calY+16;
+  let cellIdx=0;
+  realWeeks.forEach((week,wi)=>{
+    const wy=cellStartY+wi*(CAL_H_PER_ROW+GAP);
+    week.forEach((day,di)=>{
+      const cx=calX+di*(cellW+GAP);
+      const cy=wy;
+      const cw=cellW,ch=CAL_H_PER_ROW;
+
+      if(!day){
+        // empty cell - faint
+        ctx.fillStyle='rgba(255,255,255,0.015)';
+        roundRect(ctx,cx,cy,cw,ch,8);ctx.fill();
+        return;
+      }
+
+      // cell bg
+      const hasTrade=day.pnl!==null;
+      const isPos=hasTrade&&day.pnl>be;
+      const isNeg=hasTrade&&day.pnl<-be;
+      if(isPos){ctx.fillStyle='rgba(34,211,160,0.07)';}
+      else if(isNeg){ctx.fillStyle='rgba(248,113,113,0.07)';}
+      else{ctx.fillStyle='rgba(255,255,255,0.03)';}
+      roundRect(ctx,cx,cy,cw,ch,8);ctx.fill();
+
+      // border
+      if(isPos){ctx.strokeStyle='rgba(34,211,160,0.3)';ctx.lineWidth=1.5;}
+      else if(isNeg){ctx.strokeStyle='rgba(248,113,113,0.3)';ctx.lineWidth=1.5;}
+      else{ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;}
+      roundRect(ctx,cx,cy,cw,ch,8);ctx.stroke();
+
+      // today highlight
+      const today=new Date();
+      if(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===day.d){
+        ctx.strokeStyle='rgba(201,168,76,0.7)';ctx.lineWidth=1.5;
+        roundRect(ctx,cx,cy,cw,ch,8);ctx.stroke();
+        // inner glow
+        const ig=ctx.createRadialGradient(cx+cw/2,cy+ch/2,0,cx+cw/2,cy+ch/2,cw/2);
+        ig.addColorStop(0,'rgba(201,168,76,0.08)');ig.addColorStop(1,'transparent');
+        ctx.fillStyle=ig;roundRect(ctx,cx,cy,cw,ch,8);ctx.fill();
+      }
+
+      // day number
+      ctx.textAlign='left';
+      ctx.font='600 11px DM Sans,sans-serif';
+      ctx.fillStyle=hasTrade?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.28)';
+      ctx.fillText(day.d,cx+8,cy+16);
+
+      // pnl text
+      if(hasTrade){
+        const sign=day.pnl>=0?'+':'';
+        const pnlStr=sign+'$'+Math.abs(day.pnl).toFixed(0);
+        ctx.font='700 13px DM Mono,monospace';
+        ctx.fillStyle=isPos?'#22d3a0':isNeg?'#f87171':'#60a5fa';
+        ctx.shadowColor=isPos?'rgba(34,211,160,0.6)':isNeg?'rgba(248,113,113,0.6)':'rgba(96,165,250,0.5)';
+        ctx.shadowBlur=8;
+        ctx.fillText(pnlStr,cx+8,cy+40);
+        ctx.shadowBlur=0;
+
+        // sub info
+        ctx.font='400 9px DM Mono,monospace';
+        ctx.fillStyle='rgba(255,255,255,0.3)';
+        ctx.fillText(day.trades+'t · '+day.wr+'%',cx+8,cy+55);
+
+        // wr bar
+        const barY=cy+ch-10;
+        ctx.fillStyle='rgba(255,255,255,0.06)';
+        ctx.beginPath();ctx.roundRect(cx+8,barY,cw-16,2,1);ctx.fill();
+        ctx.fillStyle=isPos?'rgba(34,211,160,0.7)':isNeg?'rgba(248,113,113,0.7)':'rgba(96,165,250,0.6)';
+        ctx.beginPath();ctx.roundRect(cx+8,barY,(cw-16)*day.wr/100,2,1);ctx.fill();
+      }
+    });
+
+    // Weekly panel
+    const wp=weekPnls[wi];
+    const wx=calX+7*(cellW+GAP);
+    const wy2=wy,wh=CAL_H_PER_ROW;
+    const ww=WK_W-GAP;
+
+    const wIsPos=wp.pnl>be,wIsNeg=wp.pnl<-be;
+    // panel bg
+    if(wp.has){
+      if(wIsPos){ctx.fillStyle='rgba(34,211,160,0.08)';}
+      else if(wIsNeg){ctx.fillStyle='rgba(248,113,113,0.08)';}
+      else{ctx.fillStyle='rgba(96,165,250,0.06)';}
+    } else {ctx.fillStyle='rgba(255,255,255,0.02)';}
+    roundRect(ctx,wx,wy2,ww,wh,8);ctx.fill();
+
+    if(wp.has){
+      // panel border
+      if(wIsPos)ctx.strokeStyle='rgba(34,211,160,0.35)';
+      else if(wIsNeg)ctx.strokeStyle='rgba(248,113,113,0.35)';
+      else ctx.strokeStyle='rgba(96,165,250,0.3)';
+      ctx.lineWidth=1;roundRect(ctx,wx,wy2,ww,wh,8);ctx.stroke();
+
+      // orb in corner
+      const orbColor=wIsPos?'rgba(34,211,160,0.5)':wIsNeg?'rgba(248,113,113,0.5)':'rgba(96,165,250,0.5)';
+      drawOrb(wx+ww-10,wy2+wh,40,orbColor);
+
+      // week label
+      ctx.textAlign='left';
+      ctx.font='500 8px DM Mono,monospace';
+      ctx.fillStyle='rgba(255,255,255,0.3)';
+      ctx.fillText('W'+(wi+1),wx+8,wy2+16);
+
+      // pnl
+      const sign=wp.pnl>=0?'+':'';
+      const str=sign+'$'+Math.abs(wp.pnl).toFixed(0);
+      ctx.font='700 16px Bebas Neue,serif';
+      ctx.fillStyle=wIsPos?'#22d3a0':wIsNeg?'#f87171':'#60a5fa';
+      ctx.shadowColor=wIsPos?'rgba(34,211,160,0.7)':wIsNeg?'rgba(248,113,113,0.7)':'rgba(96,165,250,0.6)';
+      ctx.shadowBlur=10;
+      ctx.fillText(str,wx+8,wy2+40);
+      ctx.shadowBlur=0;
+
+      // trades
+      ctx.font='400 9px DM Mono,monospace';
+      ctx.fillStyle='rgba(255,255,255,0.28)';
+      ctx.fillText(wp.trades+'t',wx+8,wy2+54);
+    } else {
+      ctx.textAlign='left';
+      ctx.font='500 8px DM Mono,monospace';
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.fillText('W'+(wi+1),wx+8,wy2+16);
+      ctx.font='400 13px DM Mono,monospace';
+      ctx.fillStyle='rgba(255,255,255,0.2)';
+      ctx.fillText('—',wx+8,wy2+38);
+    }
+  });
+
+  // Stats bar
+  const statsY=cellStartY+numWeeks*(CAL_H_PER_ROW+GAP)+16;
+  const sw=(totalW-PAD*2)/4-8;
+  const statData=[
+    {label:'MONTH P&L',val:(ms.pnl>=0?'+':'')+'$'+Math.abs(ms.pnl).toFixed(0),color:ms.pnl>=0?'#22d3a0':'#f87171',glow:ms.pnl>=0?'rgba(34,211,160,0.5)':'rgba(248,113,113,0.5)'},
+    {label:'WIN RATE',val:ms.wr.toFixed(1)+'%',color:'#C9A84C',glow:'rgba(201,168,76,0.5)'},
+    {label:'AVG R:R',val:ms.avgRR.toFixed(2)+'R',color:'#f0ead8',glow:'rgba(255,255,255,0.2)'},
+    {label:'MAX DD',val:'-$'+ms.maxDD.toFixed(0),color:'#f87171',glow:'rgba(248,113,113,0.4)'},
+  ];
+  statData.forEach((st,i)=>{
+    const sx=PAD+i*(sw+8);
+    ctx.fillStyle='rgba(255,255,255,0.04)';
+    roundRect(ctx,sx,statsY,sw,60,8);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    roundRect(ctx,sx,statsY,sw,60,8);ctx.stroke();
+
+    ctx.textAlign='left';
+    ctx.font='500 8px DM Mono,monospace';
+    ctx.fillStyle='rgba(255,255,255,0.3)';
+    ctx.fillText(st.label,sx+10,statsY+16);
+
+    ctx.font='700 22px Bebas Neue,serif';
+    ctx.fillStyle=st.color;
+    ctx.shadowColor=st.glow;ctx.shadowBlur=12;
+    ctx.fillText(st.val,sx+10,statsY+46);
+    ctx.shadowBlur=0;
+  });
+
+  // Download
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='YzenNq_'+monthName.replace(' ','-')+'.png';
+  a.click();
+  toast('Calendar exported as PNG ✓');
 }
-function _doCapture(monthName){
-  // Capture just the calendar page content (everything above the stat cards)
-  const calPage=document.getElementById('page-calendar');
-  html2canvas(calPage,{
-    backgroundColor:'#060810',
-    scale:2,
-    useCORS:true,
-    allowTaint:true,
-    scrollX:0,scrollY:0,
-    windowWidth:calPage.scrollWidth,
-    windowHeight:calPage.scrollHeight,
-    ignoreElements:el=>el.classList.contains('hm-cell')&&false
-  }).then(canvas=>{
-    const a=document.createElement('a');
-    a.href=canvas.toDataURL('image/png');
-    a.download=`YzenNq_${monthName.replace(' ','-')}.png`;
-    a.click();
-    toast('Calendar saved as PNG ✓');
-  }).catch(()=>toast('Export failed — try again'));
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
 }
 
 // ══════ TRADE FORM ══════
