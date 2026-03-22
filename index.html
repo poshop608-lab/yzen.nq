@@ -5304,7 +5304,7 @@ async function authSubmit(){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
       const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
-      showAuthSuccess('Account created! Check your email to confirm, then sign in.');
+      showAuthSuccess('✉️ Confirmation email sent! Check your Gmail inbox and click the link to activate your account.');
       switchTab('login');
     }else{
       const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
