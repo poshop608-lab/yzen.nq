@@ -2545,7 +2545,6 @@ function saveAcct(){
     // ── Auto-create initial deposit so Summary shows balance immediately ──
     if(balance>0){
       if(!S.deposits)S.deposits=[];
-      // Only add if no deposit already exists for this account
       const exists=S.deposits.some(d=>d.account===n&&d.type==='Deposit');
       if(!exists){
         S.deposits.push({
@@ -2563,7 +2562,10 @@ function saveAcct(){
   const tr=document.getElementById('am-type-row');const br=document.getElementById('am-balance-row');
   if(tr)tr.style.display='';if(br)br.style.display='';
   document.getElementById('ac-name').textContent=S.cur;
-  save();closeM('amodal');
+  save();
+  // Force immediate cloud sync so deposit appears on all devices
+  if(balance>0)saveToSupabase();
+  closeM('amodal');
   if(isFirst){rCalendar();toast('Account created ✓ — start logging trades!');}
   else{toast('Saved ✓');}
 }
@@ -5231,6 +5233,21 @@ async function loadUserData(){
     if(r.newsEvents)S.newsEvents=r.newsEvents;
     if(r.replayNotes)S.replayNotes=r.replayNotes;
     if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+    // ── Auto-create missing deposits from accountMeta ──
+    if(S.accountMeta){
+      let depositsChanged=false;
+      Object.entries(S.accountMeta).forEach(([acct,meta])=>{
+        if(meta&&meta.balance>0){
+          if(!S.deposits)S.deposits=[];
+          const exists=S.deposits.some(d=>d.account===acct&&d.type==='Deposit');
+          if(!exists){
+            S.deposits.push({account:acct,type:'Deposit',amount:meta.balance,date:new Date().toISOString().split('T')[0],note:'Initial Balance'});
+            depositsChanged=true;
+          }
+        }
+      });
+      if(depositsChanged)saveToSupabase();
+    }
     try{localStorage.setItem('yz4',JSON.stringify(S));localStorage.setItem('yz4_backup',JSON.stringify(S));}catch(e){}
   }catch(e){console.warn('loadUserData:',e.message);}
   finally{window._loadingUserData=false;}
