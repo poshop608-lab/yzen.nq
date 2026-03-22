@@ -2302,7 +2302,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 let S={
   accounts:[],cur:'',
   trades:[],notes:[],deposits:[],newsEvents:[],deletedIds:[],
-  replayNotes:{}, // tradeId -> [{time, note}]
+  replayNotes:{},
   envFields:[
     {name:'9:30 Judas Swing?'},{name:'Silver Bullet?'},{name:'Clear Manipulation?'},
     {name:'SMT?'},{name:'Daily H/L Taken?'},{name:'00:00 Open'},{name:'8:30 Open'},{name:'Macro'},
@@ -2323,6 +2323,16 @@ let S={
   sumTime:'all',anTime:'all',eqTime:'all',
   psychRating:7,techRating:5,envState:{},tradeImages:[]
 };
+
+function resetState(){
+  S.accounts=[];S.cur='';S.trades=[];S.notes=[];S.deposits=[];
+  S.newsEvents=[];S.deletedIds=[];S.replayNotes={};S.filterPresets=[];
+  S.accountMeta={};S.tradeImages=[];S.envState={};
+  S.settings={target:20,mll:300,mwl:1500,maxT:2,be:20};
+  S.cal={y:new Date().getFullYear(),m:new Date().getMonth()};
+  S.sumTime='all';S.anTime='all';S.eqTime='all';
+  S.psychRating=7;S.techRating=5;
+}
 
 function save(){
   try{
@@ -5304,6 +5314,13 @@ async function authSubmit(){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
       const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
+      // Supabase returns a user with no session if email already exists
+      if(data.user&&!data.session&&data.user.identities&&data.user.identities.length===0){
+        showAuthError('This email is already registered. Please sign in instead.');
+        switchTab('login');
+        showSpinner(false);
+        return;
+      }
       showAuthSuccess('✉️ Confirmation email sent! Check your Gmail inbox and click the link to activate your account.');
       switchTab('login');
     }else{
@@ -5326,13 +5343,25 @@ async function authDemo(){
 
 async function loadUserData(){
   if(!SB||!currentUser||currentUser.id==='demo')return;
-  // Block auto-saves and cancel pending ones during load
   window._loadingUserData=true;
   clearTimeout(save._sbTimer);
   try{
+    // ── Check if this is a different user than what's in localStorage ──
+    const cachedUid=localStorage.getItem('yz4_uid');
+    if(cachedUid&&cachedUid!==currentUser.id){
+      // Different user — wipe localStorage so old data doesn't leak
+      localStorage.removeItem('yz4');
+      localStorage.removeItem('yz4_backup');
+      resetState();
+    }
+    // Store current user ID
+    localStorage.setItem('yz4_uid',currentUser.id);
+
     const{data,error}=await SB.from('yz_journal').select('data').eq('user_id',currentUser.id).maybeSingle();
     if(error){console.warn('load error:',error.message);return;}
     if(!data||!data.data){
+      // New user — reset to clean state then save blank to Supabase
+      resetState();
       await saveToSupabase(true);
       return;
     }
@@ -5492,6 +5521,10 @@ async function signOut(){
   const ok=await customConfirm('You will be signed out of your account.','↪','Sign Out','Sign Out','var(--gold)');
   if(ok){
     if(SB&&currentUser?.id!=='demo')await SB.auth.signOut();
+    // Clear all cached data so next user starts clean
+    localStorage.removeItem('yz4');
+    localStorage.removeItem('yz4_backup');
+    localStorage.removeItem('yz4_uid');
     currentUser=null;
     location.reload();
   }
@@ -5576,3 +5609,5 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
+  \
