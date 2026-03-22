@@ -1270,7 +1270,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 
       <div class="auth-divider">or sign in with email</div>
 
-      <div class="auth-input-wrap"><input type="email" id="auth-email" placeholder="Email address" onkeydown="if(event.key==='Enter')authSubmit()"></div>
+      <div class="auth-input-wrap"><input type="email" id="auth-email" placeholder="Email address" onkeydown="if(event.key==='Enter')authSubmit()" oninput="validateEmailInput(this)"></div>
+      <div id="email-hint" style="font-size:11px;font-family:var(--fm);margin-top:-6px;margin-bottom:4px;padding:0 4px;min-height:16px;transition:color .2s"></div>
       <div class="auth-input-wrap"><input type="password" id="auth-pass" placeholder="Password" onkeydown="if(event.key==='Enter')authSubmit()"></div>
       <div class="auth-input-wrap" id="auth-name-wrap" style="display:none"><input type="text" id="auth-name" placeholder="Your name (e.g. YzenNq)"></div>
       <div class="auth-spinner" id="auth-spinner"></div>
@@ -5254,13 +5255,48 @@ function switchTab(tab){
   clearAuthMessages();
 }
 
+function validateEmailInput(el){
+  const val=el.value.trim();
+  const hint=document.getElementById('email-hint');
+  if(!hint)return;
+  if(!val){hint.textContent='';hint.style.color='';return;}
+  const hasAt=val.includes('@');
+  const tldMatch=val.match(/\.([a-zA-Z]+)$/);
+  const tld=tldMatch?tldMatch[1].toLowerCase():'';
+  const validTLDs=['com','net','org','edu','gov','io','co','me','app','dev','ai','uk','in','au','ca','de','fr','jp','br','ru','nl','se','no','dk','fi','es','it','pt','nz','sg','hk','za','ae','sa','pk','bd','ng'];
+  if(hasAt&&tld&&tld.length>1){
+    if(!validTLDs.includes(tld)&&tld.length>0){
+      hint.textContent=`⚠ ".${tld}" looks invalid — did you mean .com?`;
+      hint.style.color='var(--red)';
+    } else {
+      hint.textContent='✓ Looks good';
+      hint.style.color='var(--green)';
+    }
+  } else {
+    hint.textContent='';
+  }
+}
+
 async function authSubmit(){
   if(!SB){showAuthError('Please configure Supabase first (tap ⚙️ Settings below)');return;}
-  const email=document.getElementById('auth-email').value.trim();
+  const email=document.getElementById('auth-email').value.trim().toLowerCase();
   const pass=document.getElementById('auth-pass').value;
   const isSignup=document.getElementById('tab-signup').classList.contains('active');
   if(!email||!pass){showAuthError('Email and password required');return;}
   if(pass.length<6){showAuthError('Password must be at least 6 characters');return;}
+
+  // ── Strict email validation ──
+  const emailRegex=/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+  if(!emailRegex.test(email)){showAuthError('Invalid email address — please check for typos');return;}
+  // Check TLD is valid (not .comp, .gmial, .cmo etc)
+  const tld=email.split('.').pop().toLowerCase();
+  const validTLDs=['com','net','org','edu','gov','io','co','me','app','dev','ai','uk','in','au','ca','de','fr','jp','br','ru','nl','se','no','dk','fi','es','it','pt','nz','sg','hk','za','ae','sa','pk','bd','ng'];
+  if(tld.length>4||!validTLDs.includes(tld)){
+    showAuthError(`Invalid email — ".${tld}" is not a valid domain. Did you mean .com?`);return;
+  }
+  // Update the input with cleaned email
+  document.getElementById('auth-email').value=email;
+
   showSpinner(true);clearAuthMessages();
   try{
     if(isSignup){
