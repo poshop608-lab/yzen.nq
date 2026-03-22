@@ -977,6 +977,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
   font-family:var(--fd);font-size:52px;letter-spacing:.02em;
   position:relative;
 }
+.rc-grade.A\+{background:rgba(34,211,160,0.15);color:var(--green);box-shadow:0 0 50px rgba(34,211,160,0.3),inset 0 0 20px rgba(34,211,160,0.08)}
 .rc-grade.A{background:rgba(34,211,160,0.1);color:var(--green);box-shadow:0 0 40px rgba(34,211,160,0.25),inset 0 0 20px rgba(34,211,160,0.06)}
 .rc-grade.B{background:rgba(96,165,250,0.1);color:var(--blue);box-shadow:0 0 40px rgba(96,165,250,0.25),inset 0 0 20px rgba(96,165,250,0.06)}
 .rc-grade.C{background:rgba(234,179,8,0.1);color:#eab308;box-shadow:0 0 40px rgba(234,179,8,0.2)}
@@ -2365,6 +2366,19 @@ function load(){
       // Ensure cur is valid
       if(!S.accounts||S.accounts.length===0)S.accounts=[];
       if(S.accounts.length>0&&!S.accounts.includes(S.cur))S.cur=S.accounts[0];
+      // ── MIGRATION: create initial deposits from accountMeta if missing ──
+      if(parsed.accountMeta){
+        S.accountMeta=parsed.accountMeta;
+        if(!S.deposits)S.deposits=[];
+        Object.entries(S.accountMeta).forEach(([acct,meta])=>{
+          if(meta&&meta.balance>0){
+            const exists=S.deposits.some(d=>d.account===acct&&d.type==='Deposit');
+            if(!exists){
+              S.deposits.push({account:acct,type:'Deposit',amount:meta.balance,date:new Date().toISOString().split('T')[0],note:'Initial Balance'});
+            }
+          }
+        });
+      }
     }
   }catch(e){
     try{
@@ -2526,13 +2540,26 @@ function saveAcct(){
   const balance=parseFloat(document.getElementById('am-balance')?.value)||0;
   if(document.getElementById('amodal').dataset.mode==='add'){
     S.accounts.push(n);S.cur=n;
-    // Store account metadata
     if(!S.accountMeta)S.accountMeta={};
     S.accountMeta[n]={type,balance};
+    // ── Auto-create initial deposit so Summary shows balance immediately ──
+    if(balance>0){
+      if(!S.deposits)S.deposits=[];
+      // Only add if no deposit already exists for this account
+      const exists=S.deposits.some(d=>d.account===n&&d.type==='Deposit');
+      if(!exists){
+        S.deposits.push({
+          account:n,
+          type:'Deposit',
+          amount:balance,
+          date:new Date().toISOString().split('T')[0],
+          note:'Initial Balance'
+        });
+      }
+    }
   } else {
     const i=S.accounts.indexOf(S.cur);if(i>=0)S.accounts[i]=n;S.cur=n;
   }
-  // Reset type row visibility for next open
   const tr=document.getElementById('am-type-row');const br=document.getElementById('am-balance-row');
   if(tr)tr.style.display='';if(br)br.style.display='';
   document.getElementById('ac-name').textContent=S.cur;
@@ -4722,16 +4749,27 @@ function renderReport(){
 
   // ── Top: Grade card + summary ──
   const stats=trades.length?getStats(trades):{wr:0,pnl:0,avgW:0,avgL:0,pf:null,avgRR:0,streak:0,best:null,worst:null};
-  // Calculate week grade
+  // Calculate week grade — P&L, WR, trade quality, discipline
   let gradeScore=0;
-  if(stats.wr>=60)gradeScore+=30;else if(stats.wr>=50)gradeScore+=20;else if(stats.wr>=40)gradeScore+=10;
-  if(stats.pf&&stats.pf>=2)gradeScore+=25;else if(stats.pf&&stats.pf>=1.5)gradeScore+=18;else if(stats.pf&&stats.pf>=1)gradeScore+=10;
-  const avgGrade=trades.length?trades.reduce((s,t)=>s+({A:4,B:3,C:2,D:1,F:0}[t.grade]||2),0)/trades.length:2;
-  gradeScore+=Math.round(avgGrade/4*25);
+  const wins=trades.filter(t=>t.outcome==='win').length;
+  const losses=trades.filter(t=>t.outcome==='loss').length;
+  const bes=trades.filter(t=>t.outcome==='be').length;
+  // Effective WR — BE counts as 0.5 win (25pts)
+  const effWR=trades.length?((wins+bes*0.5)/trades.length)*100:0;
+  if(effWR>=70)gradeScore+=25;else if(effWR>=55)gradeScore+=18;else if(effWR>=40)gradeScore+=12;else gradeScore+=5;
+  // Profitability — P&L positive is the most important signal (35pts)
+  if(stats.pnl>0)gradeScore+=35;else if(stats.pnl===0)gradeScore+=20;else gradeScore+=0;
+  // No losses = good discipline (15pts)
+  if(losses===0)gradeScore+=15;else if(losses<=wins)gradeScore+=8;
+  // Average trade grade (15pts)
+  const avgGrade=trades.length?trades.reduce((s,t)=>s+({'A+':5,A:4,B:3,C:2,D:1,F:0}[t.grade]||2),0)/trades.length:2;
+  gradeScore+=Math.round(avgGrade/5*15);
+  // No mistakes (10pts)
   const noMistake=trades.filter(t=>!t.mistake||t.mistake==='').length;
-  gradeScore+=trades.length?Math.round(noMistake/trades.length*20):0;
-  const weekGrade=gradeScore>=85?'A':gradeScore>=70?'B':gradeScore>=55?'C':gradeScore>=40?'D':'F';
-  const gradeMsg={A:'Elite week. Disciplined, consistent, profitable.',B:'Solid week. A few rough edges but overall good.',C:'Average week. Room to improve on discipline.',D:'Tough week. Review your rules and reset.',F:'Rough week. Focus on process over profit.'};
+  gradeScore+=trades.length?Math.round(noMistake/trades.length*10):0;
+  gradeScore=Math.min(100,gradeScore);
+  const weekGrade=gradeScore>=85?'A+':gradeScore>=72?'A':gradeScore>=58?'B':gradeScore>=44?'C':gradeScore>=30?'D':'F';
+  const gradeMsg={'A+':'Elite week. Near-perfect execution and results.','A':'Outstanding week. Disciplined and profitable.','B':'Solid week. Good execution with minor areas to improve.','C':'Average week. Review your setups and stay consistent.','D':'Needs work. Focus on process and rule discipline.','F':'Rough week. Step back and review your rules.'};
   const pnlColor=stats.pnl>=0?'var(--green)':'var(--red)';
   const rcTop=document.getElementById('rc-top');
   if(rcTop)rcTop.innerHTML=`
