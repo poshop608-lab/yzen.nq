@@ -3665,15 +3665,30 @@ function getAcctInitialBalance(){
   if(fromDep>0)return fromDep;
   // 2. Check accountMeta
   const meta=(S.accountMeta||{})[S.cur];
-  if(meta&&meta.balance>0)return meta.balance;
-  // 3. Parse account name — "50K","50k","50,000","50000","25K" etc
+  if(meta&&meta.balance>0){
+    _autoSaveDeposit(meta.balance);
+    return meta.balance;
+  }
+  // 3. Parse account name — "50K","50k","50,000","50000","25K","Lucid 50K" etc
   const name=(S.cur||'').trim();
   const noComma=name.replace(/,/g,'');
   const kMatch=noComma.match(/(\d+(?:\.\d+)?)\s*k/i);
-  if(kMatch)return parseFloat(kMatch[1])*1000;
+  if(kMatch){const b=parseFloat(kMatch[1])*1000;_autoSaveDeposit(b);return b;}
   const numMatch=noComma.match(/(\d+(?:\.\d+)?)/);
-  if(numMatch){const n=parseFloat(numMatch[1]);if(n>=1000)return n;}
+  if(numMatch){const n=parseFloat(numMatch[1]);if(n>=1000){_autoSaveDeposit(n);return n;}}
   return 0;
+}
+
+function _autoSaveDeposit(amount){
+  // Persist initial balance as a real deposit entry so it shows up everywhere
+  if(!amount||amount<=0)return;
+  if(!S.deposits)S.deposits=[];
+  const exists=S.deposits.some(d=>d.account===S.cur&&d.type==='Deposit');
+  if(!exists){
+    S.deposits.push({account:S.cur,type:'Deposit',amount,date:new Date().toISOString().split('T')[0],note:'Initial Balance'});
+    save();
+    saveToSupabase();
+  }
 }
 
 function renderSummary(){
