@@ -3687,7 +3687,8 @@ function renderAnalytics(){
   const pdArr={};trades.filter(t=>t.pdArray).forEach(t=>{const k=t.pdArray;if(!pdArr[k])pdArr[k]={n:0,w:0,pnl:0};pdArr[k].n++;if(t.outcome==='win')pdArr[k].w++;pdArr[k].pnl+=parseFloat(t.pnl)||0;});
   const pdSorted=Object.entries(pdArr).sort((a,b)=>b[1].pnl-a[1].pnl);
   // Env correlation
-  const envCols=['SMT?','Macro','8:30 Open','9:30 Judas Swing?','Silver Bullet?','Clear Manipulation?'];
+  // Use actual user envFields — only yna type fields make sense for Yes/No correlation
+  const envCols=S.envFields.filter(f=>!f.type||f.type==='yna').map(f=>f.name);
   const envStats=envCols.map(col=>{
     const y=trades.filter(t=>getEnv(t,col)==='Yes');const n=trades.filter(t=>getEnv(t,col)==='No');
     return{col,yWR:y.length?(y.filter(t=>t.outcome==='win').length/y.length*100).toFixed(0):0,yN:y.length,nWR:n.length?(n.filter(t=>t.outcome==='win').length/n.length*100).toFixed(0):0,nN:n.length,yPnl:y.reduce((a,t)=>a+(parseFloat(t.pnl)||0),0)};
