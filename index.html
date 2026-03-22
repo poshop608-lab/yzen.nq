@@ -1129,6 +1129,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 }
 .auth-btn-main:hover{transform:translateY(-2px);box-shadow:0 0 36px var(--gold-glow),0 8px 24px rgba(0,0,0,.5)}
 .auth-btn-main:disabled{opacity:.5;cursor:not-allowed;transform:none}
+@keyframes confirmPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:14px 0;color:rgba(255,255,255,0.2);font-size:10px;font-family:var(--fm);letter-spacing:.1em}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)}
 .auth-google-btn{
@@ -1276,7 +1277,46 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
       <div class="auth-input-wrap" id="auth-name-wrap" style="display:none"><input type="text" id="auth-name" placeholder="Your name (e.g. YzenNq)"></div>
       <div class="auth-spinner" id="auth-spinner"></div>
       <button class="auth-btn-main" id="auth-submit-btn" onclick="authSubmit()">Sign In</button>
+    </div>
 
+    <!-- ── CONFIRM EMAIL SCREEN ── -->
+    <div id="auth-confirm-view" style="display:none;text-align:center;padding:10px 0">
+      <div id="confirm-icon" style="font-size:52px;margin-bottom:12px;transition:all .5s">✉️</div>
+      <div style="font-family:var(--fd);font-size:26px;letter-spacing:.04em;color:var(--text);margin-bottom:6px" id="confirm-title">Check Your Email</div>
+      <div style="font-size:12px;color:var(--text3);font-family:var(--fm);margin-bottom:16px;line-height:1.6">
+        We sent a confirmation link to<br>
+        <span id="confirm-email-display" style="color:var(--gold);font-weight:600"></span>
+      </div>
+      <!-- Steps -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:16px;text-align:left">
+        <div id="confirm-step1" style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;font-family:var(--fm);color:var(--text2)">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;flex-shrink:0">1</div>
+          Open your Gmail inbox
+        </div>
+        <div id="confirm-step2" style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;font-family:var(--fm);color:var(--text3)">
+          <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);flex-shrink:0">2</div>
+          Find email from YzenNq Journal
+        </div>
+        <div id="confirm-step3" style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;font-family:var(--fm);color:var(--text3)">
+          <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);flex-shrink:0">3</div>
+          Click the confirmation link
+        </div>
+      </div>
+      <!-- Waiting indicator -->
+      <div id="confirm-waiting" style="font-size:11px;font-family:var(--fm);color:var(--text3);margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--gold);animation:confirmPulse 1.4s ease-in-out infinite"></div>
+        Waiting for confirmation...
+      </div>
+      <!-- Verified state (hidden) -->
+      <div id="confirm-verified" style="display:none;background:rgba(34,211,160,0.1);border:1px solid rgba(34,211,160,0.3);border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-size:36px;margin-bottom:6px">✅</div>
+        <div style="font-family:var(--fd);font-size:20px;color:var(--green);margin-bottom:4px">Email Verified!</div>
+        <div style="font-size:11px;font-family:var(--fm);color:var(--text2)">Signing you in...</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="resendConfirmEmail()" style="font-size:11px;font-family:var(--fm);color:var(--text3);background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">Resend Email</button>
+        <button onclick="backFromConfirm()" style="font-size:11px;font-family:var(--fm);color:var(--text3);background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">← Back</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5266,6 +5306,73 @@ function switchTab(tab){
   clearAuthMessages();
 }
 
+let _confirmEmail='';
+let _confirmPollTimer=null;
+
+function showConfirmScreen(email){
+  _confirmEmail=email;
+  document.getElementById('auth-login-view').style.display='none';
+  document.getElementById('auth-confirm-view').style.display='block';
+  document.getElementById('confirm-email-display').textContent=email;
+  document.getElementById('confirm-waiting').style.display='flex';
+  document.getElementById('confirm-verified').style.display='none';
+  document.getElementById('confirm-icon').textContent='✉️';
+  document.getElementById('confirm-title').textContent='Check Your Email';
+  // Animate steps in sequence
+  setTimeout(()=>{
+    const s2=document.getElementById('confirm-step2');
+    s2.style.color='var(--text2)';
+    s2.querySelector('div').style.background='var(--gold)';
+    s2.querySelector('div').style.color='#000';
+  },1500);
+  setTimeout(()=>{
+    const s3=document.getElementById('confirm-step3');
+    s3.style.color='var(--text2)';
+    s3.querySelector('div').style.background='var(--gold)';
+    s3.querySelector('div').style.color='#000';
+  },3000);
+  // Start polling every 3 seconds
+  _confirmPollTimer=setInterval(()=>pollEmailVerified(email),3000);
+}
+
+async function pollEmailVerified(email){
+  try{
+    // Try signing in — if email confirmed it will succeed
+    const{data,error}=await SB.auth.signInWithPassword({email,password:_confirmPass});
+    if(data?.user&&!error){
+      clearInterval(_confirmPollTimer);
+      // Show verified UI
+      document.getElementById('confirm-waiting').style.display='none';
+      document.getElementById('confirm-verified').style.display='block';
+      document.getElementById('confirm-icon').textContent='🎉';
+      document.getElementById('confirm-title').textContent='Account Verified!';
+      // Enter app after short delay
+      setTimeout(async()=>{
+        currentUser=data.user;
+        await loadUserData();
+        enterApp();
+      },1800);
+    }
+  }catch(e){}
+}
+
+async function resendConfirmEmail(){
+  if(!_confirmEmail)return;
+  try{
+    await SB.auth.resend({type:'signup',email:_confirmEmail});
+    const btn=event.target;
+    btn.textContent='Sent ✓';btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='Resend Email';btn.style.color='var(--text3)';},3000);
+  }catch(e){}
+}
+
+function backFromConfirm(){
+  clearInterval(_confirmPollTimer);
+  document.getElementById('auth-confirm-view').style.display='none';
+  document.getElementById('auth-login-view').style.display='block';
+  switchTab('signup');
+}
+
 function validateEmailInput(el){
   const val=el.value.trim();
   const hint=document.getElementById('email-hint');
@@ -5287,6 +5394,8 @@ function validateEmailInput(el){
     hint.textContent='';
   }
 }
+
+let _confirmPass='';
 
 async function authSubmit(){
   if(!SB){showAuthError('Please configure Supabase first (tap ⚙️ Settings below)');return;}
@@ -5314,15 +5423,17 @@ async function authSubmit(){
       const name=document.getElementById('auth-name').value.trim()||email.split('@')[0];
       const{data,error}=await SB.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
       if(error)throw error;
-      // Supabase returns a user with no session if email already exists
       if(data.user&&!data.session&&data.user.identities&&data.user.identities.length===0){
         showAuthError('This email is already registered. Please sign in instead.');
         switchTab('login');
         showSpinner(false);
         return;
       }
-      showAuthSuccess('✉️ Confirmation email sent! Check your Gmail inbox and click the link to activate your account.');
-      switchTab('login');
+      // Show confirm email screen with real-time polling
+      _confirmPass=pass;
+      showSpinner(false);
+      showConfirmScreen(email);
+      return;
     }else{
       const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
       if(error)throw error;
@@ -5609,5 +5720,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
-  \
