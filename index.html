@@ -3607,13 +3607,27 @@ function delReplayNote(id,i){if(!S.replayNotes[id])return;S.replayNotes[id].spli
 
 // ══════ SUMMARY ══════
 function setTime(t,el){S.sumTime=t;document.querySelectorAll('#sum-tf .tf-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderSummary();}
+function getAcctInitialBalance(){
+  // 1. Check deposits
+  const dep=S.deposits.filter(d=>d.account===S.cur&&d.type==='Deposit');
+  const fromDep=dep.reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
+  if(fromDep>0)return fromDep;
+  // 2. Check accountMeta
+  const meta=S.accountMeta?.[S.cur]?.balance||0;
+  if(meta>0)return meta;
+  // 3. Parse account name e.g. "50K" → 50000, "25k" → 25000, "100000" → 100000
+  const name=S.cur||'';
+  const match=name.match(/^(\d+(?:\.\d+)?)\s*k$/i);
+  if(match)return parseFloat(match[1])*1000;
+  const num=parseFloat(name);
+  if(!isNaN(num)&&num>0)return num;
+  return 0;
+}
+
 function renderSummary(){
   const dep=S.deposits.filter(d=>d.account===S.cur);
-  const totalDep=dep.filter(d=>d.type==='Deposit').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
   const totalPay=dep.filter(d=>d.type==='Payout').reduce((s,d)=>s+(parseFloat(d.amount)||0),0);
-  // Fallback: use accountMeta balance if no deposit logged
-  const metaBalance=S.accountMeta?.[S.cur]?.balance||0;
-  const effectiveDep=totalDep||metaBalance;
+  const effectiveDep=getAcctInitialBalance();
 
   const trades=filterTime(acctTrades(),S.sumTime);
   const s=getStats(trades);
@@ -3831,10 +3845,11 @@ function renderEquity(){
   drawEquityCurve(trades);
   drawDDCurve(trades);
   const s=getStats(trades);
+  const startBal2=getAcctInitialBalance();
   document.getElementById('eq-stats').innerHTML=`
-    <div class="sc green"><div class="sl">Peak Equity</div><div class="sv pos">+$${Math.max(0,...trades.reduce((arr,t)=>{let e=(arr[arr.length-1]||0)+(parseFloat(t.pnl)||0);arr.push(e);return arr;},[]).map(Math.abs)).toFixed(0)}</div></div>
+    <div class="sc green"><div class="sl">Peak Balance</div><div class="sv pos">$${(startBal2+Math.max(0,...trades.reduce((arr,t)=>{let e=(arr[arr.length-1]||0)+(parseFloat(t.pnl)||0);arr.push(e);return arr;},[]))).toFixed(0)}</div></div>
     <div class="sc red"><div class="sl">Max Drawdown</div><div class="sv neg">-$${s.maxDD.toFixed(2)}</div></div>
-    <div class="sc gold"><div class="sl">Final P&L</div><div class="sv ${s.pnl>=0?'pos':'neg'}">${s.pnl>=0?'+':''}$${Math.abs(s.pnl).toFixed(2)}</div></div>`;
+    <div class="sc gold"><div class="sl">Current Balance</div><div class="sv ${s.pnl>=0?'pos':'neg'}">$${(startBal2+s.pnl).toFixed(2)}</div></div>`;
   // DOW bars
   const dowData=DAYS.slice(1,6).map(day=>{
     const di=DAYS.indexOf(day);
@@ -3857,8 +3872,10 @@ function drawEquityCurve(trades){
   const W=canvas.width,H=canvas.height,PAD=40;
   ctx.clearRect(0,0,W,H);
   if(!trades.length){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.font='24px DM Sans';ctx.textAlign='center';ctx.fillText('No trades to display',W/2,H/2);return;}
-  // Build equity points
-  const pts=[0];let eq=0;trades.forEach(t=>{eq+=parseFloat(t.pnl)||0;pts.push(eq);});
+  // Start from initial account balance
+  const startBal=getAcctInitialBalance();
+  const pts=[startBal];let eq=startBal;
+  trades.forEach(t=>{eq+=parseFloat(t.pnl)||0;pts.push(eq);});
   const minP=Math.min(...pts),maxP=Math.max(...pts);
   const range=maxP-minP||1;
   const toX=i=>(i/(pts.length-1))*(W-PAD*2)+PAD;
